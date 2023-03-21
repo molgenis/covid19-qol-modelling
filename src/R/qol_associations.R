@@ -88,7 +88,7 @@ main <- function(argv=NULL) {
   args <- parser$parse_args(argv)
   
   processing_guide <- read_excel(path = args$path_excel, sheet="individual") 
-  processing_guide %>%
+  fro %>%
     mutate(fromJSON(discretize))
   
   # Anne, start here:
