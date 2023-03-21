@@ -21,8 +21,11 @@
 ## ----
 
 # Load libraries
+library(argparse)
+library(rjson)
 library(tidyverse)
 library(data.table)
+library(readxl)
 library(ggrepel)
 library(gamm4)
 library(mgcv)
@@ -42,7 +45,13 @@ theme_update(
   text = element_text(family="Helvetica", size=7)
 )
 
-breaks <- list("age"=c(18, 30, 50, 65, Inf))
+
+parser <- ArgumentParser(description = 'Plot QoL results.')
+parser$add_argument('--path-excel', metavar = 'path', type = 'character',
+                    help = 'Path to an excel file that describes how covariates should be processed')
+parser$add_argument('--path-qol', metavar = 'path', type = 'character', required = TRUE,
+                    help = 'Path to a file with data')
+
 
 sample_n_groups = function(tbl, size, replace = FALSE, weight = NULL) {
   # regroup when done
@@ -75,65 +84,17 @@ main <- function(argv=NULL) {
   if (is.null(argv)) {
     argv <- commandArgs(trailingOnly = T)
   }
-  # Process input
-  pre_covid <- as_tibble(fread(
-    "/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL/swls_satisfied_adu_q_03.tsv.gz", 
-    data.table=F)) %>%
-    mutate(age_bins = cut(age, breaks=breaks[["age"]], include.lowest=T, right=T)) %>%
-    rename(life_satisfaction = swls_satisfied_adu_q_03)
   
-  pre_covid_summarised <- pre_covid %>% 
-    group_by(across(all_of(c("Month", column_of_interest)))) %>%
-    summarise(life_satisfaction = mean(life_satisfaction, na.rm = T), n_total = n()) %>%
-    filter(n_total > 50)
+  args <- parser$parse_args(argv)
   
-  # Calculate GAMs per group
-  modelled_pre <- pre_covid %>% nest_by(across(all_of(c(column_of_interest)))) %>%
-    mutate(mod = list(gam(life_satisfaction ~ s(Month), data = data))) %>%
-    select(-data) %>%
-    rename(gam = mod)
-  
-  # Predict this GAM
-  predicted_pre <- predict_gamms(modelled_pre, "gam", c(0, 12), "Month") %>%
-    unnest(data) %>%
-    rename(c(life_satisfaction="fit")) %>%
-    mutate(lab_col = as.character(get(column_of_interest)))
-  
-  # Create table with which to label each model
-  label_df_pre <- subset(pre_covid_summarised, Month == max(Month)) %>%
-    mutate(lab_col=age_bins)
-  
-  p <- ggplot(pre_covid,
-              aes(x=Month, y=life_satisfaction, color=.data[[column_of_interest]])) +
-    geom_point(data = pre_covid_summarised, alpha=1, size=1, shape=16) +
-    geom_line(data = pre_covid_summarised, aes(x=Month, y=life_satisfaction))+
-    geom_text_repel(
-      data = label_df_pre,
-      aes(label = lab_col),
-      min.segment.length = 0,
-      hjust = 0,
-      vjust = 0.5,
-      direction = "y",
-      nudge_x = 2,
-      segment.alpha = .5,
-      segment.curvature = -0.1,
-      segment.ncp = 3,
-      segment.angle = 20
-    ) +
-    scale_color_viridis(discrete=TRUE, na.value = "grey50") +
-    ggtitle(column_of_interest) +
-    theme(legend.position="none")
-  
-  # Save plot in .png or .pdf
-  ggsave(sprintf("out-pre-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-         width=160, height=120, units='mm')  
-  ggsave(sprintf("out-pre-%s-%s.pdf", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-         width=160, height=120, units='mm')
+  processing_guide <- read_excel(path = args$path_excel, sheet="individual") 
+  processing_guide %>%
+    mutate(fromJSON(discretize))
   
   # Anne, start here:
   # Load both input tables, and also convert the general health column to an ordered factor
-  qol_tib <- as_tibble(fread(argv[1], data.table=F)) 
-  covar_tib <- as_tibble(fread(argv[2], data.table=F)) %>%
+  qol_tib <- as_tibble(fread(args$path_qol, data.table=F)) 
+  covar_tib <- as_tibble(fread(args$path_covariates, data.table=F)) %>%
     mutate(
       general_health=ordered(general_health, levels=c("poor", "mediocre", "good", "very good", "excellent")))
   
