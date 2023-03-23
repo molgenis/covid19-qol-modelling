@@ -75,6 +75,30 @@ predict_gamms <- function(tbl, gam, x_limits, xlab="day") {
   return(tbl %>% mutate(data = list(predict_gam(get({{gam}}), x_limits, xlab))))
 }
 
+discretize_column <- function(values, discretization) {
+  if (c("breaks", "labels") == names(discretization)) {
+    return(
+      cut(values, breaks=discretization["breaks"], 
+          labels=discretization["labels"], include.lowest=T, right=T))
+  } else (c("quantiles") == names(discretization)) {
+    breaks = quantile(values, probs=discretization["quantiles"])
+    return(
+      cut(values, breaks=breaks, include.lowest=T, right=T, dig.lab = 2)
+    )
+  } else {
+    return(values)
+  }
+}
+
+process_column <- function(values, guide) {
+  discretized <- discretize_column(values, guide["discretization"])
+  levels <- guide["labels"]
+  if (is.null(names(levels))) {
+    return(ordered(discretized, levels=levels, labels=levels))
+  }
+  return(ordered(discretized, levels=levels, labels=names(levels)))
+}
+
 # Main
 
 #' Execute main
@@ -87,16 +111,15 @@ main <- function(argv=NULL) {
   
   args <- parser$parse_args(argv)
   
-  processing_guide <- read_excel(path = args$path_excel, sheet="individual") 
-  processing_guide %>%
-    mutate(fromJSON(discretize))
+  processing_guide_raw <- read_excel(path = args$path_excel, sheet="individual") 
+  processing_guide <- processing_guide_raw %>%
+    rowwise() %>%
+    mutate(discretize = list(fromJSON(discretize)), 
+           labels = list(fromJSON(categories)))
   
   # Anne, start here:
   # Load both input tables, and also convert the general health column to an ordered factor
-  qol_tib <- as_tibble(fread(args$path_qol, data.table=F)) 
-  covar_tib <- as_tibble(fread(args$path_covariates, data.table=F)) %>%
-    mutate(
-      general_health=ordered(general_health, levels=c("poor", "mediocre", "good", "very good", "excellent")))
+  qol_tib <- as_tibble(fread(args$path_qol, data.table=F))
   
   # Filtered with enough samples
   qol_tib_filtered <- qol_tib %>% group_by(project_pseudo_id) %>%
@@ -104,27 +127,33 @@ main <- function(argv=NULL) {
     ungroup() %>%
     mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
 
-    # Calculate the minimum, maximum dates, as well as the number of days that separete the two
+    
+  # Calculate the minimum, maximum dates, as well as the number of days that separate the two
   dayzero <- min(as.Date("2020-03-30"))
   daymax <- max(qol_tib_filtered$responsedate)
   dayinterval <- interval(dayzero, daymax) / days(1)
   
   # Below, we calculate quartiles for each of the columns listed below, and assign the results to a new column <column>_quartiles
   # Columns to discretize
-  columns_to_discretize <- c("household_status")
   
-  # Discretize custom
-  characteristics_processed <- covar_tib %>% 
-    filter(project_pseudo_id %in% qol_tib_filtered$project_pseudo_id) %>%
-    mutate(age_bins = cut(age, breaks=breaks[["age"]], include.lowest=T, right=T))
+  # For each grouping, 
+  # - perform discritization (optional)
+  # - perform relabelling (optional)
   
-  # Summarised over groups
-  # characteristics_processed <- covar_tib %>% 
-  #   filter(project_pseudo_id %in% qol_tib_filtered$project_pseudo_id) %>%
-  #   mutate(across(all_of(columns_to_discretize), .fns = ~ ordered(ntile(.x, 4), levels=c(1:4), labels=c("1st quartile", "2nd quartile", "3rd quartile", paste0(4, "th quartile"))), .names = "{.col}_quartiles"))
-
-  # Perform method
   column_of_interest <- "age_bins"
+  
+  characteritics_table <- overall_tib %>% 
+    group_by(project_pseudo_id) %>%
+    distinct(pick(columns_of_interest))
+  
+  # TODO:
+  # Associations between beta groups
+  # Generate plots
+  
+  characteristics_processed <- covar_tib %>%
+    mutate(across(columns_of_interest), 
+           process_column(.x, processing_guide[processing_guide$column_name==cur_column(),]), 
+           .names = "{.col}_processed")
 
   # Add the table with characteristics (some discretized) to the quality of life table
   full_tbl <- qol_tib_filtered %>%
