@@ -77,10 +77,12 @@ predict_gamms <- function(tbl, gam, x_limits, xlab="day") {
 
 discretize_column <- function(values, discretization) {
   if (c("breaks", "labels") == names(discretization)) {
+    print(discretization)
     return(
       cut(values, breaks=discretization["breaks"], 
           labels=discretization["labels"], include.lowest=T, right=T))
-  } else (c("quantiles") == names(discretization)) {
+  } else if (c("quantiles") == names(discretization)) {
+    print(discretization)
     breaks = quantile(values, probs=discretization["quantiles"])
     return(
       cut(values, breaks=breaks, include.lowest=T, right=T, dig.lab = 2)
@@ -91,8 +93,20 @@ discretize_column <- function(values, discretization) {
 }
 
 process_column <- function(values, guide) {
-  discretized <- discretize_column(values, guide["discretization"])
-  levels <- guide["labels"]
+  print(guide)
+  discretization <- guide[["discretize"]]
+  message("discretization")
+  print(discretization)
+  print(labels)
+  print(values)
+  if (length(discretization) > 0) {
+    discretized <- discretize_column(values, discretization)
+  } else {
+    discretized <- values
+  }
+  levels <- guide[["labels"]]
+  print(table(discretized))
+  print(levels)
   if (is.null(names(levels))) {
     return(ordered(discretized, levels=levels, labels=levels))
   }
@@ -115,7 +129,8 @@ main <- function(argv=NULL) {
   processing_guide <- processing_guide_raw %>%
     rowwise() %>%
     mutate(discretize = list(fromJSON(discretize)), 
-           labels = list(fromJSON(categories)))
+           labels = list(fromJSON(labels))) %>%
+    ungroup()
   
   # Anne, start here:
   # Load both input tables, and also convert the general health column to an ordered factor
@@ -140,20 +155,29 @@ main <- function(argv=NULL) {
   # - perform discritization (optional)
   # - perform relabelling (optional)
   
-  column_of_interest <- "age_bins"
+  columns_of_interest <- processing_guide$column_name
+  columns_of_interest <- columns_of_interest[columns_of_interest != "age"]
   
-  characteritics_table <- overall_tib %>% 
+  characteritics_table <- qol_tib %>% 
     group_by(project_pseudo_id) %>%
-    distinct(pick(columns_of_interest))
+    distinct(across(all_of(columns_of_interest)), .keep_all=T) %>%
+    slice_min(responsedate) %>% select(all_of(columns_of_interest))
   
   # TODO:
   # Associations between beta groups
   # Generate plots
   
-  characteristics_processed <- covar_tib %>%
-    mutate(across(columns_of_interest), 
-           process_column(.x, processing_guide[processing_guide$column_name==cur_column(),]), 
-           .names = "{.col}_processed")
+  characteristics_processed <- characteritics_table %>%
+    mutate(across(all_of(columns_of_interest), 
+           ~ process_column(.x, processing_guide[processing_guide$column_name==cur_column(),], 
+           .names = "{.col}_processed")))
+  
+  fisher_out <- characteristics_processed %>%
+    filter(!is.na(beta_type)) %>%
+    summarise(across(
+      all_of(c("")), 
+      ~ list(tidy(cor.test(.x, beta_type, "spearman"))))) %>%
+    unnest(fisher_test)
 
   # Add the table with characteristics (some discretized) to the quality of life table
   full_tbl <- qol_tib_filtered %>%
