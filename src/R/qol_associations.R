@@ -22,7 +22,7 @@
 
 # Load libraries
 library(argparse)
-library(rjson)
+library(jsonlite)
 library(tidyverse)
 library(data.table)
 library(readxl)
@@ -51,6 +51,8 @@ parser$add_argument('--path-excel', metavar = 'path', type = 'character',
                     help = 'Path to an excel file that describes how covariates should be processed')
 parser$add_argument('--path-qol', metavar = 'path', type = 'character', required = TRUE,
                     help = 'Path to a file with data')
+parser$add_argument('--path-covar', metavar = 'path', type = 'character', required = TRUE,
+                    help = 'Path to a file with data')
 
 
 sample_n_groups = function(tbl, size, replace = FALSE, weight = NULL) {
@@ -76,14 +78,13 @@ predict_gamms <- function(tbl, gam, x_limits, xlab="day") {
 }
 
 discretize_column <- function(values, discretization) {
-  if (c("breaks", "labels") == names(discretization)) {
-    print(discretization)
-    return(
-      cut(values, breaks=discretization["breaks"], 
-          labels=discretization["labels"], include.lowest=T, right=T))
-  } else if (c("quantiles") == names(discretization)) {
-    print(discretization)
-    breaks = quantile(values, probs=discretization["quantiles"])
+  if (all(c("breaks", "labels") %in% names(discretization))) {
+    cut_values <- cut(
+      values, breaks=discretization[["breaks"]], 
+      labels=discretization[["labels"]], include.lowest=T, right=T)
+    return(cut_values)
+  } else if ("quantiles" %in% names(discretization)) {
+    breaks = quantile(values, probs=discretization[["quantiles"]], na.rm=T)
     return(
       cut(values, breaks=breaks, include.lowest=T, right=T, dig.lab = 2)
     )
@@ -93,24 +94,20 @@ discretize_column <- function(values, discretization) {
 }
 
 process_column <- function(values, guide) {
-  print(guide)
   discretization <- guide[["discretize"]]
-  message("discretization")
-  print(discretization)
-  print(labels)
-  print(values)
   if (length(discretization) > 0) {
-    discretized <- discretize_column(values, discretization)
+    discretized <- discretize_column(values, discretization[[1]])
   } else {
     discretized <- values
   }
   levels <- guide[["labels"]]
-  print(table(discretized))
-  print(levels)
-  if (is.null(names(levels))) {
-    return(ordered(discretized, levels=levels, labels=levels))
+  if (length(levels) > 0) {
+    levels <- levels[[1]]
+    if (is.null(names(levels))) {
+      return(ordered(discretized, levels=levels, labels=levels))
+    }
+    return(ordered(discretized, levels=levels, labels=names(levels)))
   }
-  return(ordered(discretized, levels=levels, labels=names(levels)))
 }
 
 # Main
@@ -129,23 +126,26 @@ main <- function(argv=NULL) {
   processing_guide <- processing_guide_raw %>%
     rowwise() %>%
     mutate(discretize = list(fromJSON(discretize)), 
-           labels = list(fromJSON(labels))) %>%
+           labels = list(fromJSON(labels)),
+           filter = list(fromJSON(filter))) %>%
     ungroup()
   
   # Anne, start here:
   # Load both input tables, and also convert the general health column to an ordered factor
-  qol_tib <- as_tibble(fread(args$path_qol, data.table=F))
+  covar_tib <- as_tibble(fread(args$path_covar, data.table=F))
+  qol_tib <- as_tibble(fread(args$path_qol, data.table=F)) %>%
+    select(-any_of(processing_guide$column_name))
   
-  # Filtered with enough samples
-  qol_tib_filtered <- qol_tib %>% group_by(project_pseudo_id) %>%
-    filter(n() > 15) %>%
-    ungroup() %>%
-    mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
+  # 
+  # # Filtered with enough samples
+  # qol_tib_filtered <- qol_tib %>% group_by(project_pseudo_id) %>%
+  #   filter(n() > 15) %>%
+  #   ungroup() %>%
+  #   mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
 
-    
   # Calculate the minimum, maximum dates, as well as the number of days that separate the two
   dayzero <- min(as.Date("2020-03-30"))
-  daymax <- max(qol_tib_filtered$responsedate)
+  daymax <- max(qol_tib$responsedate)
   dayinterval <- interval(dayzero, daymax) / days(1)
   
   # Below, we calculate quartiles for each of the columns listed below, and assign the results to a new column <column>_quartiles
@@ -156,21 +156,27 @@ main <- function(argv=NULL) {
   # - perform relabelling (optional)
   
   columns_of_interest <- processing_guide$column_name
-  columns_of_interest <- columns_of_interest[columns_of_interest != "age"]
   
-  characteritics_table <- qol_tib %>% 
-    group_by(project_pseudo_id) %>%
-    distinct(across(all_of(columns_of_interest)), .keep_all=T) %>%
-    slice_min(responsedate) %>% select(all_of(columns_of_interest))
+  characteristics_table <- covar_tib %>% 
+    select(all_of(columns_of_interest))
   
   # TODO:
   # Associations between beta groups
   # Generate plots
   
-  characteristics_processed <- characteritics_table %>%
-    mutate(across(all_of(columns_of_interest), 
-           ~ process_column(.x, processing_guide[processing_guide$column_name==cur_column(),], 
-           .names = "{.col}_processed")))
+  characteristics_processed <- characteristics_table %>%
+    mutate(across(
+             all_of(columns_of_interest),
+             ~ filter_column(.x, processing_guide[processing_guide$column_name==cur_column(), "filter_na"]),
+             .names = "{col}_filtered"),
+           across(
+             all_of(paste0(columns_of_interest, "_filtered")),
+             ~ process_column(.x, as.list(processing_guide[paste0(processing_guide$column_name, "_filtered")==cur_column(),])),
+             .names = "{col}_to_test"),
+           across(
+             all_of(paste0(columns_of_interest, "_filtered")), 
+             ~ process_column(.x, as.list(processing_guide[paste0(processing_guide$column_name, "_filtered")==cur_column(),])),
+             .names = "{col}_to_plot"))
   
   fisher_out <- characteristics_processed %>%
     filter(!is.na(beta_type)) %>%
