@@ -84,6 +84,8 @@ discretize_column <- function(values, discretization) {
       labels=discretization[["labels"]], include.lowest=T, right=T)
     return(cut_values)
   } else if ("quantiles" %in% names(discretization)) {
+    print("quantiles")
+    print(discretization)
     breaks = quantile(values, probs=discretization[["quantiles"]], na.rm=T)
     return(
       cut(values, breaks=breaks, include.lowest=T, right=T, dig.lab = 2)
@@ -93,27 +95,57 @@ discretize_column <- function(values, discretization) {
   }
 }
 
-process_column <- function(values, guide) {
-  discretization <- guide[["discretize"]]
+process_column_discretize <- function(values, discretization, labels, type) {
   if (length(discretization) > 0) {
-    discretized <- discretize_column(values, discretization[[1]])
+    discretized <- discretize_column(values, discretization)
   } else {
     discretized <- values
   }
-  levels <- guide[["labels"]]
-  if (length(levels) > 0) {
-    levels <- levels[[1]]
+  
+  out <- discretized
+  
+  if (length(labels) > 0) {
+    levels <- labels
+    print("levels!!")
+    print(levels)
     if (is.null(names(levels))) {
-      return(ordered(discretized, levels=levels, labels=levels))
+      out <- ordered(discretized, levels=levels, labels=levels)
     }
-    return(ordered(discretized, levels=levels, labels=names(levels)))
+    out <- ordered(discretized, levels=levels, labels=names(levels))
   }
+  
+  if (!is.factor(out)) {
+    if (type == "discrete") {
+      out <- factor(out,ordered=T)
+    }
+  }
+  return(out)
 }
+
+# 
+# process_column_test <- function(values, labels) {
+#   print(discretization)
+#   discretization <- guide[["discretize"]]
+#   if (length(discretization) > 0) {
+#     discretized <- discretize_column(values, discretization[[1]])
+#   } else {
+#     discretized <- values
+#   }
+#   levels <- guide[["labels"]]
+#   if (length(levels) > 0) {
+#     levels <- levels[[1]]
+#     if (is.null(names(levels))) {
+#       return(ordered(discretized, levels=levels, labels=levels))
+#     }
+#     return(ordered(discretized, levels=levels, labels=names(levels)))
+#   }
+# }
 
 filter_column <- function(values, filter) {
   if (length(filter) > 0) {
     values[values %in% filter] <- NA
   }
+  values[values == ""] <- NA
   return(values)
 }
 
@@ -140,8 +172,11 @@ main <- function(argv=NULL) {
   # Anne, start here:
   # Load both input tables, and also convert the general health column to an ordered factor
   covar_tib <- as_tibble(fread(args$path_covar, data.table=F))
-  qol_tib <- as_tibble(fread(args$path_qol, data.table=F)) %>%
-    select(-any_of(processing_guide$column_name))
+  qol_tib <- as_tibble(fread(args$path_qol, data.table=F))
+  
+  qol_table <- qol_tib %>%
+    select(-any_of(processing_guide$column_name)) %>%
+    mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
   
   # 
   # # Filtered with enough samples
@@ -152,7 +187,7 @@ main <- function(argv=NULL) {
 
   # Calculate the minimum, maximum dates, as well as the number of days that separate the two
   dayzero <- min(as.Date("2020-03-30"))
-  daymax <- max(qol_tib$responsedate)
+  daymax <- max(qol_table$responsedate)
   dayinterval <- interval(dayzero, daymax) / days(1)
   
   # Below, we calculate quartiles for each of the columns listed below, and assign the results to a new column <column>_quartiles
@@ -165,24 +200,39 @@ main <- function(argv=NULL) {
   columns_of_interest <- processing_guide$column_name
   
   characteristics_table <- covar_tib %>% 
-    select(all_of(columns_of_interest))
+    select(project_pseudo_id, all_of(columns_of_interest))
   
   # TODO:
   # Associations between beta groups
   # Generate plots
   
+  filter_guide <- processing_guide[["filter"]]
+  names(filter_guide) <- processing_guide[["column_name"]]
+  
+  type_assoc_guide <- processing_guide[["type_assoc"]]
+  names(type_assoc_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
+  
+  type_plot_guide <- processing_guide[["type_plot"]]
+  names(type_plot_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
+  
+  discretization_guide <- processing_guide[["discretize"]]
+  names(discretization_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
+  
+  labelling_guide <- processing_guide[["labels"]]
+  names(labelling_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
+  
   characteristics_processed <- characteristics_table %>%
     mutate(across(
              all_of(columns_of_interest),
-             ~ filter_column(.x, unlist(processing_guide[processing_guide$column_name==cur_column(), "filter"])),
+             ~ filter_column(.x, filter_guide[[cur_column()]]),
              .names = "{col}_filtered"),
            across(
-             all_of(paste0(columns_of_interest, "_filtered")),
-             ~ process_column(.x, as.list(processing_guide[paste0(processing_guide$column_name, "_filtered")==cur_column(),])),
-             .names = "{col}_to_test"),
-           across(
              all_of(paste0(columns_of_interest, "_filtered")), 
-             ~ process_column(.x, as.list(processing_guide[paste0(processing_guide$column_name, "_filtered")==cur_column(),])),
+             ~ process_column_discretize(
+               .x, 
+               discretization_guide[[cur_column()]], 
+               labelling_guide[[cur_column()]],
+               type_plot_guide[[cur_column()]]),
              .names = "{col}_to_plot"))
   
   fisher_out <- characteristics_processed %>%
@@ -191,197 +241,99 @@ main <- function(argv=NULL) {
       all_of(c("")), 
       ~ list(tidy(cor.test(.x, beta_type, "spearman"))))) %>%
     unnest(fisher_test)
+  
+  for (column_of_interest_raw in columns_of_interest) {
+    column_of_interest <- paste0(column_of_interest_raw, "_filtered_to_plot")
+    guide_row <- processing_guide %>% filter(column_name == column_of_interest_raw)
+    message(guide_row %>% pull(name))
 
-  # Add the table with characteristics (some discretized) to the quality of life table
-  full_tbl <- qol_tib_filtered %>%
-    select(project_pseudo_id, qualityoflife, responsedate, day) %>%
-    inner_join(characteristics_processed, by="project_pseudo_id") %>%
-    filter(!is.na(get(column_of_interest)), get(column_of_interest) != "")
+    # Add the table with characteristics (some discretized) to the quality of life table
+    full_tbl <- qol_table %>%
+      select(project_pseudo_id, qualityoflife, responsedate, day) %>%
+      inner_join(characteristics_processed, by="project_pseudo_id") %>%
+      filter(!is.na(get(column_of_interest)), get(column_of_interest) != "")
+    
+    # Create a summarised table in which to calculate daily averages per group
+    summarised_tbl <- full_tbl %>% 
+      group_by(across(all_of(c("responsedate", column_of_interest)))) %>%
+      summarise(qualityoflife = mean(qualityoflife, na.rm = T), n_total = n()) %>%
+      filter(n_total > 50)
+    
+    # Calculate a GAM for the daily population average model
+    #modelled_average <- gamm4(qualityoflife ~ s(day, bs="cr"), random = ~ (1|project_pseudo_id), data = qol_tib_filtered)
+    modelled_average <- gam(qualityoflife ~ s(day), data = qol_table)
+    
+    # Predict this GAM
+    predicted_average <- predict_gam(modelled_average, c(0, dayinterval)) %>%
+      mutate(responsedate = dayzero + day) %>%
+      rename(c(qualityoflife="fit"))
+    
+    predicted_average %>% filter(day == min(day) | day == max(day))
   
-  # Create a summarised table in which to calculate daily averages per group
-  summarised_tbl <- full_tbl %>% 
-    group_by(across(all_of(c("responsedate", column_of_interest)))) %>%
-    summarise(qualityoflife = mean(qualityoflife, na.rm = T), n_total = n()) %>%
-    filter(n_total > 50)
+    # Calculate GAMs per group
+    modelled <- full_tbl %>% nest_by(across(all_of(c(column_of_interest)))) %>%
+      mutate(mod = list(gam(qualityoflife ~ s(day), data = data))) %>%
+      select(-data) %>%
+      rename(gam = mod) %>%
+      mutate(eff = summary(gam)[["p.coeff"]]["day"] * dayinterval,
+             eff.se = summary(gam)[["se"]]["day"] * dayinterval)
   
-  # Calculate a GAM for the daily population average model
-  #modelled_average <- gamm4(qualityoflife ~ s(day, bs="cr"), random = ~ (1|project_pseudo_id), data = qol_tib_filtered)
-  modelled_average <- gam(qualityoflife ~ s(day), data = qol_tib_filtered)
+    # Predict this GAM
+    predicted <- predict_gamms(modelled, "gam", c(0, dayinterval)) %>%
+      unnest(data) %>%
+      mutate(responsedate = dayzero + day) %>%
+      rename(c(qualityoflife="fit")) %>%
+      mutate(lab_col = as.character(get(column_of_interest)))
+    
+    #predicted %>% group_by(age_bins) %>% filter(day == min(day) | day == max(day))
+    
+    # Create table with which to label each model
+    label_df <- subset(bind_rows(predicted, predicted_average), responsedate == max(responsedate)) %>%
+      mutate(lab_col = case_when(is.na(lab_col) ~ "population average", TRUE ~ lab_col))
   
-  # Predict this GAM
-  predicted_average <- predict_gam(modelled_average, c(0, dayinterval)) %>%
-    mutate(responsedate = dayzero + day) %>%
-    rename(c(qualityoflife="fit"))
-  
-  predicted_average %>% filter(day == min(day) | day == max(day))
-
-  # Calculate GAMs per group
-  modelled <- full_tbl %>% nest_by(across(all_of(c(column_of_interest)))) %>%
-    mutate(mod = list(gam(qualityoflife ~ s(day), data = data))) %>%
-    select(-data) %>%
-    rename(gam = mod) %>%
-    mutate(eff = summary(gam)[["p.coeff"]]["day"] * dayinterval,
-           eff.se = summary(gam)[["se"]]["day"] * dayinterval)
-
-  # Predict this GAM
-  predicted <- predict_gamms(modelled, "gam", c(0, dayinterval)) %>%
-    unnest(data) %>%
-    mutate(responsedate = dayzero + day) %>%
-    rename(c(qualityoflife="fit")) %>%
-    mutate(lab_col = as.character(get(column_of_interest)))
-  
-  #predicted %>% group_by(age_bins) %>% filter(day == min(day) | day == max(day))
-  
-  # Create table with which to label each model
-  label_df <- subset(bind_rows(predicted, predicted_average), responsedate == max(responsedate)) %>%
-    mutate(lab_col = case_when(is.na(lab_col) ~ "population average", TRUE ~ lab_col))
-
-  # Create plot
-  
-  ## One layer with daily averages per group
-  ## Two times two layers(geom_ribbon + geom_line) for the GAM models + Standard error
-  ## One layer with that direct labels the GAM models.
-  ## Scale_x_date to accomodate for extra room for the direct labels.
-  ## Scale color viridis to add a na.value color that is used for the label of the average model
-  ## Set title
-  ## Remove the legend
-  
-  p <- ggplot(full_tbl,
-              aes(x=responsedate, y=qualityoflife, color=.data[[column_of_interest]])) +
-    geom_point(data = summarised_tbl, alpha=0.2, size=1, shape=16) +
-    geom_ribbon(data = predicted_average, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit), alpha=0.2, inherit.aes=F) +
-    geom_line(data = predicted_average, aes(x=responsedate, y=qualityoflife), inherit.aes=F, color="grey70")+
-    geom_ribbon(data = predicted, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit, group=.data[[column_of_interest]]), alpha=0.2, inherit.aes=F) +
-    geom_line(data = predicted, aes(x=responsedate, y=qualityoflife))+
-    geom_text_repel(
-      data = label_df,
-      aes(label = lab_col),
-      min.segment.length = 0,
-      hjust = 0,
-      vjust = 0.5,
-      direction = "y",
-      nudge_x = 24,
-      segment.alpha = .5,
-      segment.curvature = -0.1,
-      segment.ncp = 3,
-      segment.angle = 20
-    ) +
-    scale_x_date(
-      limits = as.Date(c(dayzero, daymax + 400)), 
-    ) +
-    scale_color_viridis(discrete=TRUE, na.value = "grey50") +
-    labs(title=column_of_interest) + ylab("Quality of life score (1-10)") + xlab("Date") +
-    theme(legend.position="none")
-  
-  # Save plot in .png or .pdf
-  ggsave(sprintf("out-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-         width=160, height=120, units='mm')
-  ggsave(sprintf("out-%s-%s.pdf", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-         width=160, height=120, units='mm')
-  
-  dates <- as.Date(c(
-    "30/03/2020",
-    "06/04/2020",
-    "13/04/2020",
-    "20/04/2020",
-    "27/04/2020",
-    "04/05/2020",
-    "18/05/2020",
-    "01/06/2020",
-    "15/06/2020",
-    "06/07/2020",
-    "13/07/2020",
-    "10/08/2020",
-    "07/09/2020",
-    "12/10/2020",
-    "02/11/2020",
-    "17/11/2020",
-    "30/11/2020",
-    "14/12/2020",
-    "11/01/2021",
-    "01/03/2021",
-    "29/03/2021",
-    "26/04/2021",
-    "25/05/2021",
-    "05/07/2021",
-    "11/10/2021",
-    "20/12/2021",
-    "28/02/2022",
-    "11/04/2022",
-    "30/05/2022",
-    "11/07/2022",
-    "03/10/2022"), format = "%d/%m/%Y")
-  
-num_quest_map <- c("04"=4, "1"=1, "10"=10, "11"=11, "12"=12, "13"=13, "14"=14, "15"=15, "15b"=16, "16"=17, "16b"=18,
-  "17"=19, "18"=20, "19"=21, "2"=2, "20"=22, "21"=23, "22"=24, "23"=25, "24"=26, "25"=27, "26"=28,
-  "27"=29, "28"=30, "29"=31, "3"=3, "4"=4, "5"=5, "6"=6, "7"=7, "8"=8, "9"=9)
-
-num_quest_tib <- tibble(quest_num_index = sort(num_quest_map), quest_num_label = names(sort(num_quest_map))) %>%
-  mutate(quest_date = dates[quest_num_index])
-  
-  p <- ggplot(qol_tib_filtered,
-              aes(x=responsedate)) +
-    geom_point(data=tibble(startdate=dates), aes(startdate, y = 1)) +
-    geom_histogram(binwidth=7, linewidth=0, fill="#E6E6E6") +
-    scale_x_date(
-      limits = as.Date(c(dayzero, daymax)), 
-    ) +
-    coord_cartesian(expand=expansion(add=c(7,0), mult=c(0.00, 0.00)))+
-    ylab("y") + xlab("Date") +
-    theme(legend.position="none", aspect.ratio=1/3.5)
-  
-  # Save plot in .png or .pdf
-  ggsave(sprintf("out-qol-responsedensity-%s.png", format(Sys.Date(), "%Y%m%d")), p,
-         width=120, height=45, units='mm')
-  ggsave(sprintf("out-qol-responsedensity-%s.pdf", format(Sys.Date(), "%Y%m%d")), p,
-         width=120, height=45, units='mm')
-  
-  summarised_tbl <- qol_table %>% 
-    distinct(project_pseudo_id, num_quest, responsedate) %>%
-    inner_join(num_quest_tib, by=c("num_quest" = "quest_num_label")) %>%
-    filter(quest_num_index!=1) %>%
-    inner_join(qol_tib, by = c("project_pseudo_id", "responsedate")) %>%
-    group_by(quest_date) %>%
-    summarise(qualityoflife = mean(qualityoflife, na.rm = T), n_total = n())
-
-  p <- ggplot(summarised_tbl,
-              aes(x=quest_date, y=qualityoflife)) +
-    geom_point(colour="#009E73", shape=16) +
-    geom_line(colour="#009E73") +
-    scale_x_date(
-      limits = as.Date(c(dayzero, daymax)), 
-    ) +
-    coord_cartesian(expand=expansion(add=c(7,0), mult=c(0.00, 0.00)))+
-    ylab("y") + xlab("Date") +
-    theme(legend.position="none", aspect.ratio=1/3.5)
-  
-  # Save plot in .png or .pdf
-  ggsave(sprintf("out-qol-simpleqol-%s.png", format(Sys.Date(), "%Y%m%d")), p,
-         width=120, height=45, units='mm')
-  ggsave(sprintf("out-qol-simpleqol-%s.pdf", format(Sys.Date(), "%Y%m%d")), p,
-         width=120, height=45, units='mm')
-  
-  # Path
-  #path_files <- "C:/Users/EwijkA/OneDrive - UMCG/models_QOL/dataPlots/"
-  path_files <- "/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL/"
-  # Read file
-  num_quest_filter <- read.csv(file = file.path(path_files, "num_quest_filter_only_nogenderage.tsv"), sep="\t")
-  datesend <- read.csv(file = paste(path_files, "datesend.csv", sep=""), sep=";")
-  df_merge <- merge(num_quest_filter,datesend,by="num_quest")
-  df_merge <- subset(df_merge, select = -c(index))
-  df_merge$date_send = as.Date(df_merge$date_send, format="%d-%m-%Y")
-  
-
-  
-  # Create ggplot2 ScatterPlot with vertical
-  # line to X Axis of Class 'Date'
-  vlinedPlot <- ggplot(df_merge, aes(date_send, num_participants_filter)) +
-    geom_segment(aes(xend = date_send, yend = 0), linewidth = 1, lineend = "butt", color='darkgray') +
-    geom_point(size = 1, color='dimgray')
-  
-  #geom_vline(xintercept = as.numeric(data$X_dates[date_range]),
-  #           color = "dark green", size = 2)
-  vlinedPlot
+    # Create plot
+    
+    ## One layer with daily averages per group
+    ## Two times two layers(geom_ribbon + geom_line) for the GAM models + Standard error
+    ## One layer with that direct labels the GAM models.
+    ## Scale_x_date to accomodate for extra room for the direct labels.
+    ## Scale color viridis to add a na.value color that is used for the label of the average model
+    ## Set title
+    ## Remove the legend
+    
+    p <- ggplot(full_tbl,
+                aes(x=responsedate, y=qualityoflife, color=.data[[column_of_interest]])) +
+      geom_point(data = summarised_tbl, alpha=0.2, size=1, shape=16) +
+      geom_ribbon(data = predicted_average, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit), alpha=0.2, inherit.aes=F) +
+      geom_line(data = predicted_average, aes(x=responsedate, y=qualityoflife), inherit.aes=F, color="grey70")+
+      geom_ribbon(data = predicted, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit, group=.data[[column_of_interest]]), alpha=0.2, inherit.aes=F) +
+      geom_line(data = predicted, aes(x=responsedate, y=qualityoflife))+
+      geom_text_repel(
+        data = label_df,
+        aes(label = lab_col),
+        min.segment.length = 0,
+        hjust = 0,
+        vjust = 0.5,
+        direction = "y",
+        nudge_x = 24,
+        segment.alpha = .5,
+        segment.curvature = -0.1,
+        segment.ncp = 3,
+        segment.angle = 20
+      ) +
+      scale_x_date(
+        limits = as.Date(c(dayzero, daymax + 400)), 
+      ) +
+      scale_color_viridis(discrete=TRUE, na.value = "grey50") +
+      labs(title=guide_row %>% pull(name)) + ylab("Quality of life score (1-10)") + xlab("Date") +
+      theme(legend.position="none")
+    
+    # Save plot in .png or .pdf
+    ggsave(sprintf("out-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
+           width=80, height=60, units='mm')
+    ggsave(sprintf("out-%s-%s.pdf", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
+           width=80, height=60, units='mm')
+  }
   
   #plot(y=df_merge$num_participants_filter,x=df_merge$date_send, xlab="date",ylab="Num participants",col="black", type = "h") 
   #points(y=df_merge$num_participants_filter, xlab="date", pch=16,col="red", type = "p", size=2)
