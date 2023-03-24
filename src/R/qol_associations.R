@@ -110,6 +110,13 @@ process_column <- function(values, guide) {
   }
 }
 
+filter_column <- function(values, filter) {
+  if (length(filter) > 0) {
+    values[values %in% filter] <- NA
+  }
+  return(values)
+}
+
 # Main
 
 #' Execute main
@@ -122,7 +129,7 @@ main <- function(argv=NULL) {
   
   args <- parser$parse_args(argv)
   
-  processing_guide_raw <- read_excel(path = args$path_excel, sheet="individual", na) 
+  processing_guide_raw <- read_excel(path = args$path_excel, sheet="individual") 
   processing_guide <- processing_guide_raw %>%
     rowwise() %>%
     mutate(discretize = list(fromJSON(discretize)), 
@@ -167,7 +174,7 @@ main <- function(argv=NULL) {
   characteristics_processed <- characteristics_table %>%
     mutate(across(
              all_of(columns_of_interest),
-             ~ filter_column(.x, processing_guide[processing_guide$column_name==cur_column(), "filter_na"]),
+             ~ filter_column(.x, unlist(processing_guide[processing_guide$column_name==cur_column(), "filter"])),
              .names = "{col}_filtered"),
            across(
              all_of(paste0(columns_of_interest, "_filtered")),
