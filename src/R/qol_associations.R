@@ -122,7 +122,7 @@ main <- function(argv=NULL) {
   
   args <- parser$parse_args(argv)
   
-  processing_guide_raw <- read_excel(path = args$path_excel, sheet="individual") 
+  processing_guide_raw <- read_excel(path = args$path_excel, sheet="individual", na) 
   processing_guide <- processing_guide_raw %>%
     rowwise() %>%
     mutate(discretize = list(fromJSON(discretize)), 
