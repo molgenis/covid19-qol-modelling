@@ -79,6 +79,12 @@ predict_gamms <- function(tbl, gam, x_limits, xlab="day") {
 }
 
 discretize_column <- function(values, discretization) {
+  print(str(values))
+  if (is.factor(values)) {
+    values <- as.numeric(values)
+  }
+  print(str(values))
+  
   if (all(c("breaks", "labels") %in% names(discretization))) {
     cut_values <- cut(
       values, breaks=discretization[["breaks"]], 
@@ -97,22 +103,24 @@ discretize_column <- function(values, discretization) {
 }
 
 process_column_discretize <- function(values, discretization, labels, type) {
-  if (length(discretization) > 0) {
-    discretized <- discretize_column(values, discretization)
-  } else {
-    discretized <- values
-  }
-  
-  out <- discretized
+  labelled <- values
   
   if (length(labels) > 0) {
     levels <- labels
     if (is.null(names(levels))) {
-      out <- ordered(discretized, levels=levels, labels=levels)
+      labelled <- ordered(values, levels=levels, labels=levels)
     } else {
-      out <- ordered(discretized, levels=levels, labels=names(levels))
+      labelled <- ordered(values, levels=levels, labels=names(levels))
     }
   }
+  
+  if (length(discretization) > 0) {
+    discretized <- discretize_column(labelled, discretization)
+  } else {
+    discretized <- labelled
+  }
+  
+  out <- discretized
   
   if (!is.factor(out)) {
     if (type == "discrete") {
@@ -166,7 +174,7 @@ main <- function(argv=NULL) {
   processing_guide <- processing_guide_raw %>%
     rowwise() %>%
     mutate(discretize = list(fromJSON(discretize)), 
-           labels = list(fromJSON(labels)),
+           ordering = list(fromJSON(ordering)),
            filter = list(fromJSON(filter))) %>%
     ungroup()
   
@@ -219,7 +227,7 @@ main <- function(argv=NULL) {
   discretization_guide <- processing_guide[["discretize"]]
   names(discretization_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
   
-  ordering_guide <- processing_guide[["labels"]]
+  ordering_guide <- processing_guide[["ordering"]]
   names(ordering_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
   
   characteristics_processed <- characteristics_table %>%
@@ -244,14 +252,17 @@ main <- function(argv=NULL) {
              .names = "{col}_to_plot"))
   
   fisher_out <- characteristics_processed %>%
-    filter(!is.na(beta_type)) %>%
+    filter(beta_type %in% c("bottom", "around_zero")) %>%
     summarise(
       across(
-        all_of(paste_0(processing_guide %>% filter(type_assoc %in% c("ordinal", "continuous", "discrete")) %>% pull(column_name), "_filtered_to_test")), 
-        ~ list(tidy(cor.test(.x, beta_type, "spearman")))),
+        all_of(paste0(processing_guide %>% filter(type_assoc %in% c("ordinal", "continuous", "discrete")) %>% pull(column_name), "_filtered_to_test")), 
+        ~ list(tidy(cor.test(
+          x=as.numeric(.x), 
+          y=as.numeric(beta_type_filtered_to_test), 
+          method="spearman"))), .names="{col}_spearman"),
       across(
-        all_of(paste_0(processing_guide %>% filter(type_assoc %in% c("binary", "categorical")) %>% pull(column_name), "_filtered_to_test")), 
-        ~ list(tidy(fisher.test(.x, beta_type))))) %>%
+        all_of(paste0(processing_guide %>% filter(type_assoc %in% c("binary", "categorical")) %>% pull(column_name), "_filtered_to_test")), 
+        ~ list(tidy(fisher.test(.x, beta_type))), .names="{col}_fisher")) %>%
     unnest(fisher_test)
   
   for (column_of_interest_raw in columns_of_interest) {
