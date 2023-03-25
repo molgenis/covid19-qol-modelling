@@ -42,7 +42,8 @@ theme_update(
   strip.background = element_rect(colour = NA, fill = NA),
   panel.grid.minor = element_blank(),
   title = element_text(colour = "#595A5C", face = "bold"),
-  text = element_text(family="Helvetica", size=7)
+  text = element_text(family="Helvetica", size=7),
+  axis.text = element_text(size=6)
 )
 
 
@@ -106,12 +107,11 @@ process_column_discretize <- function(values, discretization, labels, type) {
   
   if (length(labels) > 0) {
     levels <- labels
-    print("levels!!")
-    print(levels)
     if (is.null(names(levels))) {
       out <- ordered(discretized, levels=levels, labels=levels)
+    } else {
+      out <- ordered(discretized, levels=levels, labels=names(levels))
     }
-    out <- ordered(discretized, levels=levels, labels=names(levels))
   }
   
   if (!is.factor(out)) {
@@ -122,24 +122,25 @@ process_column_discretize <- function(values, discretization, labels, type) {
   return(out)
 }
 
-# 
-# process_column_test <- function(values, labels) {
-#   print(discretization)
-#   discretization <- guide[["discretize"]]
-#   if (length(discretization) > 0) {
-#     discretized <- discretize_column(values, discretization[[1]])
-#   } else {
-#     discretized <- values
-#   }
-#   levels <- guide[["labels"]]
-#   if (length(levels) > 0) {
-#     levels <- levels[[1]]
-#     if (is.null(names(levels))) {
-#       return(ordered(discretized, levels=levels, labels=levels))
-#     }
-#     return(ordered(discretized, levels=levels, labels=names(levels)))
-#   }
-# }
+
+process_column_test <- function(values, ordering, type) {
+  out <- values
+  print(ordering)
+  if (length(ordering) > 0) {
+    if (is.null(names(ordering))) {
+      out <- factor(values, levels=ordering, labels=ordering, ordered=type=="ordinal")
+    } else {
+      out <- factor(values, levels=ordering, labels=names(ordering), ordered=type=="ordinal")
+    }
+  }
+  
+  if (!is.factor(out)) {
+    if (type == "discrete") {
+      out <- factor(out,ordered=T)
+    }
+  }
+  return(out)
+}
 
 filter_column <- function(values, filter) {
   if (length(filter) > 0) {
@@ -218,8 +219,8 @@ main <- function(argv=NULL) {
   discretization_guide <- processing_guide[["discretize"]]
   names(discretization_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
   
-  labelling_guide <- processing_guide[["labels"]]
-  names(labelling_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
+  ordering_guide <- processing_guide[["labels"]]
+  names(ordering_guide) <- paste0(processing_guide[["column_name"]], "_filtered")
   
   characteristics_processed <- characteristics_table %>%
     mutate(across(
@@ -228,18 +229,29 @@ main <- function(argv=NULL) {
              .names = "{col}_filtered"),
            across(
              all_of(paste0(columns_of_interest, "_filtered")), 
+             ~ process_column_test(
+               .x, 
+               ordering_guide[[cur_column()]],
+               type_assoc_guide[[cur_column()]]),
+             .names = "{col}_to_test"),
+           across(
+             all_of(paste0(columns_of_interest, "_filtered")), 
              ~ process_column_discretize(
                .x, 
                discretization_guide[[cur_column()]], 
-               labelling_guide[[cur_column()]],
+               ordering_guide[[cur_column()]],
                type_plot_guide[[cur_column()]]),
              .names = "{col}_to_plot"))
   
   fisher_out <- characteristics_processed %>%
     filter(!is.na(beta_type)) %>%
-    summarise(across(
-      all_of(c("")), 
-      ~ list(tidy(cor.test(.x, beta_type, "spearman"))))) %>%
+    summarise(
+      across(
+        all_of(paste_0(processing_guide %>% filter(type_assoc %in% c("ordinal", "continuous", "discrete")) %>% pull(column_name), "_filtered_to_test")), 
+        ~ list(tidy(cor.test(.x, beta_type, "spearman")))),
+      across(
+        all_of(paste_0(processing_guide %>% filter(type_assoc %in% c("binary", "categorical")) %>% pull(column_name), "_filtered_to_test")), 
+        ~ list(tidy(fisher.test(.x, beta_type))))) %>%
     unnest(fisher_test)
   
   for (column_of_interest_raw in columns_of_interest) {
@@ -330,9 +342,9 @@ main <- function(argv=NULL) {
     
     # Save plot in .png or .pdf
     ggsave(sprintf("out-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-           width=80, height=60, units='mm')
+           width=180, height=120, units='mm')
     ggsave(sprintf("out-%s-%s.pdf", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-           width=80, height=60, units='mm')
+           width=180, height=120, units='mm')
   }
   
   #plot(y=df_merge$num_participants_filter,x=df_merge$date_send, xlab="date",ylab="Num participants",col="black", type = "h") 
