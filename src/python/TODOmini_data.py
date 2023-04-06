@@ -5,253 +5,292 @@ import pandas as pd
 import numpy as np
 import os
 import sys
-import re
 sys.path.append(
-    '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
+    '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/COVID_Anne')
 from config import get_config
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-from collections import Counter
 import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 
-def select_label(before_mini_df, set_participants, df_dep, df_anx, MINI_path):
-    """
-    GEHAD
-    """
-    # Filter dataframe on covid participants
-    before_mini_df = before_mini_df[before_mini_df['project_pseudo_id'].isin(set_participants)]
-    # A. MAJOR DEPRESSIVE EPISODE
-    df_1_2 = before_mini_df[before_mini_df['before_2a_sum_mini_a_1_2'] >= 1]
-    major_depressive_episode = df_1_2[df_1_2['before_2a_sum_mini_a_all'] >= 5]
-    major_depressive_episode['major_depressive_episode'] = 1
-    
 
-    # O. GENERALIZED ANXIETY DISORDER
-    df_1 = before_mini_df[before_mini_df['before_2a_sum_mini_o_1_ab'] >= 2]
-    df_2 = df_1[df_1['before_2a_sum_mini_o_2'] >= 1]
-    generalized_anxiety_disorder = df_2[df_2['before_2a_sum_mini_o_3_all'] >= 3]
-    generalized_anxiety_disorder['generalized_anxiety_disorder'] = 1
+def calculating_depressive(path_myfolder, mini_df):
+    # 1 = yes, 2 = no
+    # MAJOR DEPRESSIVE EPISODE
+    # print('bezig met maken van lijsten/sets')
+    mini_dep_col = list()
+    unique_mini = set()
+    number_quest = set()
+    for col in mini_df.columns:
+        if 'minia' in col:
+            mini_df[col] = mini_df[col].astype(str).replace('2.0', 0).replace('1.0', 1).replace('nan', np.nan)
+            mini_dep_col.append(col)
+            unique_mini.add(col.split('_')[1])
+            number_quest.add(f"{col.split('_')[0]}_")
     
+    sorted_quest = sorted(number_quest)
 
-    before_mini_df = pd.merge(before_mini_df, major_depressive_episode[['project_pseudo_id', 'major_depressive_episode']], on=['project_pseudo_id'], how='outer')
-    before_mini_df['major_depressive_episode'] = before_mini_df['major_depressive_episode'].fillna(0)
-    print(dict(Counter(list(before_mini_df['major_depressive_episode']))))
-   
-    before_mini_df = pd.merge(before_mini_df, generalized_anxiety_disorder[['project_pseudo_id', 'generalized_anxiety_disorder']], on=['project_pseudo_id'], how='outer')
-    before_mini_df['generalized_anxiety_disorder'] = before_mini_df['generalized_anxiety_disorder'].fillna(0)
-    print(dict(Counter(list(before_mini_df['generalized_anxiety_disorder']))))
+    # select_columns
 
-    merge_before_between = pd.merge(before_mini_df, df_dep, on=['project_pseudo_id'], how='outer')
-    merge_before_between = pd.merge(merge_before_between, df_anx, on=['project_pseudo_id'], how='outer')
-    merge_before_between['major_depressive_episode'] = merge_before_between['major_depressive_episode'].fillna(0)
-    
-    merge_before_between['generalized_anxiety_disorder'] = merge_before_between['generalized_anxiety_disorder'].fillna(0)
-    
-    
-    merge_before_between.to_csv(f"{MINI_path}between_before_mini.tsv.gz", sep='\t',
-                        encoding='utf-8', compression='gzip', index=False)
-    
-    return merge_before_between 
+    # print('bezig met mini vragen')
+    for quest in sorted_quest:
+        matching_quest = [s for s in mini_dep_col if quest in s]
+        gradation = [s for s in matching_quest if 'minia3' in s] + ['project_pseudo_id']
+        symtomes = [s for s in matching_quest if 'minia3' not in s] + ['project_pseudo_id']
+        
+        mini_df[f'{quest}sum_minia_3'] = mini_df.loc[:,gradation].sum(axis=1) #df_gradation[gradation[0]] + df_gradation[gradation[1]] #df_gradation.sum(axis=1)
+        mini_df[f'{quest}sum_minia_1_2'] = mini_df.loc[:,symtomes].sum(axis=1)
+        mini_df[f'{quest}sum_minia_all'] = mini_df.loc[:,[f'{quest}sum_minia_1_2', f'{quest}sum_minia_3']].sum(axis=1)
 
-def sum_same_quest(mini_df, list_cat):
+        """
+        pagina 5
+        Wanneer het 1 is de sum of hoger heeft deze gene symptomen van depressie
+        Vervolgens kan er gekeken worden werke graad door vragen 3
+        Wanneer er van vraag 1, 2 en alle vragen van 3 er 5 of meer met ja zijn beantwoord kan er MAJOR DEPRESSIVE
+        EPISODE, CURRENT
+        """
+    # print(mini_df)
+    # print(list(mini_df.columns))
+    # mini_df.to_csv(f'{path_myfolder}merge_for_model_questdata_wellbeing_household2_media_generalhealth2_PRS_income_education_mini_miniadddep.tsv.gz', sep='\t',
+    #                      encoding='utf-8', compression='gzip', index=False)
+
+    cat_columns = ['project_pseudo_id']
+    for col in mini_df.columns:
+        if 'minia' in col:
+            cat_columns.append(col)
+    df_cat = mini_df[cat_columns]
+    df_cat = df_cat.drop_duplicates().reset_index()
+    del df_cat["index"]
+    df_cat.to_csv(f'{path_myfolder}df/sep_mini_depressive.tsv.gz', sep='\t',
+                         encoding='utf-8', compression='gzip', index=False)
+    return df_cat
+
+
+def calculating_anxiety(path_myfolder, mini_df, set_3c, set_3d, set_3f):
+    print('--------')
+    # 1 = yes, 2 = no
+    # GENERALIZED ANXIETY DISORDER
+    mini_anx_col = list()
+    unique_mini = set()
+    number_quest = set()
+    for col in mini_df.columns:
+        if 'minio' in col:
+            mini_df[col] = mini_df[col].astype(str).replace('2.0', 0).replace('1.0', 1).replace('nan', np.nan)
+            mini_anx_col.append(col)
+            unique_mini.add(col.split('_')[1])
+            number_quest.add(f"{col.split('_')[0]}_")
+        if 'minia' in col:
+            mini_df[col] = mini_df[col].astype(str).replace('2.0', 0).replace('1.0', 1).replace('nan', np.nan)
+    
+    sorted_quest = sorted(number_quest)
+    sorted_mini = sorted(unique_mini)
+    sorted_all_mini = sorted(mini_anx_col + set_3c + set_3d + set_3f)
+
+    print(mini_anx_col)
+    print(sorted_all_mini)
+
+    print(list(mini_df.columns))
+
+    for quest in sorted_quest:
+        print(quest)
+        matching_quest = [s for s in sorted_all_mini if quest in s]
+        gradation = [s for s in matching_quest if 'minio3' in s] + ['project_pseudo_id']
+        symtomes_1 = [s for s in matching_quest if 'minio1' in s] + ['project_pseudo_id']
+        symtomes_2 = [s for s in matching_quest if 'minio2' in s] + ['project_pseudo_id']
+        # symtomes_1_2 = symtomes_1 + symtomes_2
+        print('------------------')
+        print(symtomes_1)
+
+        minio3c = list(filter(lambda x: quest in x, set_3c))
+        minio3d = list(filter(lambda x: quest in x, set_3d))
+        minio3f = list(filter(lambda x: quest in x, set_3f))
+        
+        mini_df[f'{quest}sum_minio_1'] = mini_df.loc[:,symtomes_1].sum(axis=1)
+        mini_df[f'{quest}sum_minio_2'] = mini_df.loc[:,symtomes_2].sum(axis=1)
+        # mini_df[f'{quest}_sum_minio_1_2'] = mini_df.loc[:,symtomes_1_2].sum(axis=1)
+        mini_df[f'{quest}all_minio3c'] = mini_df.loc[:,minio3c].sum(axis=1)
+        mini_df[f'{quest}minio3c'] = mini_df.loc[:,minio3c].sum(axis=1)
+        mini_df[f'{quest}minio3c'][mini_df[f'{quest}minio3c'] > 1] = 1
+        mini_df[f'{quest}minio3d'] = mini_df.loc[:,minio3d].sum(axis=1)
+        mini_df[f'{quest}minio3f'] = mini_df.loc[:,minio3f].sum(axis=1)
+        columns_03 = gradation + [f'{quest}minio3c', f'{quest}minio3d', f'{quest}minio3f']
+        mini_df[f'{quest}sum_minio_3'] = mini_df.loc[:,columns_03].sum(axis=1)
+        mini_df[f'{quest}sum_minio_all'] = mini_df.loc[:,[f'{quest}sum_minio_1', f'{quest}sum_minio_2', f'{quest}sum_minio_3']].sum(axis=1)
+        # print(mini_df)
+
+        # mini_df[f'{quest}_sum_minia_all'] = mini_df.loc[:,[f'{quest}_sum_minia_1_2', f'{quest}_sum_minia_3']].sum(axis=1)
     """
-    
+    zie pagina 24
+    Wanneer het 1 is de sum of hoger heeft deze gene symptomen van depressie
+    Vervolgens kan er gekeken worden werke graad door vragen 3
+    Wanneer er van vraag 1, 2 en alle vragen van 3 er 5 of meer met ja zijn beantwoord kan er MAJOR DEPRESSIVE
+    EPISODE, CURRENT
     """
-    list_cat = sorted(list_cat)
-    for num in list_cat:
-        if 'fatigue' not in num:
-            mini_col = [col for col in mini_df.columns if f'mini{num}' in col]
-            mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
-            mini_df[f'between_mini_{num}_1'] = mini_df[mini_col].sum(axis=1)
-            mini_df[f'between_mini_{num}_0'] = (mini_df[mini_col] == 0).sum(axis=1)
-            mini_df[f'between_mini_{num}_percent_1']  = mini_df[f'between_mini_{num}_1'] / (mini_df[f'between_mini_{num}_1'] + mini_df[f'between_mini_{num}_0']) * 100
-            mini_df[f'between_above_mini_{num}'] = np.where(mini_df[f'between_mini_{num}_percent_1'] >= 50, 1, 0)
+
+    cat_columns = ['project_pseudo_id']
+    for col in mini_df.columns:
+        if 'minio' in col:
+            cat_columns.append(col)
+    df_cat = mini_df[cat_columns]
+    df_cat = df_cat.drop_duplicates().reset_index()
+    del df_cat["index"]
+    df_cat.to_csv(f'{path_myfolder}df/sep_mini_anxiety.tsv.gz', sep='\t',
+                         encoding='utf-8', compression='gzip', index=False)
+    return df_cat
+
+
+def get_o(i, df_results, df_variable, set_3c, set_3d, set_3f, mini_df, set_columns):
+    print('======================================')
+    # Replace none_values with np.nan in df
+    none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
+    df_results[df_results.isin(none_value)] = np.nan
+    for index, row in df_variable.iterrows():
+        if 'voelde me moe' in row['definition_nl'] or 'was gauw moe' in row['definition_nl'] or 'voelde ik me uitgeput' in row['definition_nl']:
+            print(row['variable_name'])
+            print(row['definition_nl'])
+            set_columns.add(row['variable_name'].replace(f'covt{i}', ''))
+            set_3c.add(row['variable_name'])
+            df_results[[row['variable_name']]] = df_results[[row['variable_name']]].apply(pd.to_numeric)
+            df_results[row['variable_name']][df_results[row['variable_name']] <= 5] = 1
+            df_results[row['variable_name']][df_results[row['variable_name']] > 5] = 0
+            # print(df_results[['project_pseudo_id', row['variable_name']]])
+            mini_df = pd.merge(mini_df, df_results[['project_pseudo_id', row['variable_name']]], on=['project_pseudo_id'], how='outer')
+        if 'dag moeilijk concentreren of moeilijk beslissingen nemen' in row['definition_nl']:
+            print(row['variable_name'])
+            print(row['definition_nl'])
+            set_columns.add(row['variable_name'].replace(f'covt{i}', ''))
+            set_3d.add(row['variable_name'])
+            # mini_df = pd.merge(mini_df, df_results[['project_pseudo_id', row['variable_name']]], on=['project_pseudo_id'], how='outer')
+        if 'nacht slaapproblemen gehad' in row['definition_nl']:
+            print(row['variable_name'])
+            print(row['definition_nl'])
+            set_columns.add(row['variable_name'].replace(f'covt{i}', ''))
+            set_3f.add(row['variable_name'])
+            # mini_df = pd.merge(mini_df, df_results[['project_pseudo_id', row['variable_name']]], on=['project_pseudo_id'], how='outer')
+    return mini_df, set_3c, set_3d, set_3f, set_columns
+
+
+def get_other_quest_anxiety(path_myfolder, path_variables, path_results, path_enumerations, mini_df):
+    set_3c = set()
+    set_3d = set()
+    set_3f = set()
+    set_columns = set()
+
+    for i in range(1,29):
+        if i < 10:
+            i = f'0{i}'
+        if i == 15 or i == 16:
+            df_variable = pd.read_csv(f'{path_variables}covq_q_t{i}_variables.csv', sep=',', encoding='utf-8')
+            df_results = pd.read_csv(f'{path_results}covq_q_t{i}_results.csv', sep=',', encoding='utf-8')
+            df_enumerations = pd.read_csv(f'{path_enumerations}covq_q_t{i}_enumerations.csv', sep=',', encoding='utf-8')
+            mini_df, set_3c, set_3d, set_3f, set_columns = get_o(i, df_results, df_variable, set_3c, set_3d, set_3f, mini_df, set_columns)
+            # b
+            df_variable = pd.read_csv(f'{path_variables}covq_q_t{i}b_variables.csv', sep=',', encoding='utf-8')
+            df_results = pd.read_csv(f'{path_results}covq_q_t{i}b_results.csv', sep=',', encoding='utf-8')
+            df_enumerations = pd.read_csv(f'{path_enumerations}covq_q_t{i}b_enumerations.csv', sep=',', encoding='utf-8')
+            mini_df, set_3c, set_3d, set_3f, set_columns = get_o(f'{i}b', df_results, df_variable, set_3c, set_3d, set_3f, mini_df, set_columns)
+
         else:
-            frag_col = [col for col in mini_df.columns if num in col]
-            # for i in frag_col:
-            #     print(set(list(frag_col[frag_col[i].notna()][i])))
-        # print(mini_df[mini_col + [f'between_mini_{num}_1', f'between_mini_{num}_0', f'between_mini_{num}_percent_1', f'between_above_mini_{num}']])
-    mini_col_above = ['project_pseudo_id'] + [col for col in mini_df.columns if f'between_above_mini_' in col]
-    mini_above = mini_df[mini_col_above]
-    return mini_above
+            df_variable = pd.read_csv(f'{path_variables}covq_q_t{i}_variables.csv', sep=',', encoding='utf-8')
+            df_results = pd.read_csv(f'{path_results}covq_q_t{i}_results.csv', sep=',', encoding='utf-8')
+            df_enumerations = pd.read_csv(f'{path_enumerations}covq_q_t{i}_enumerations.csv', sep=',', encoding='utf-8')
+            mini_df, set_3c, set_3d, set_3f, set_columns = get_o(i, df_results, df_variable, set_3c, set_3d, set_3f, mini_df, set_columns)
+            
+    # print(set_3f)
+    print(list(mini_df.columns))
+    print(set_columns)
+
+    return mini_df, list(set_3c), list(set_3d), list(set_3f)
 
 
-def calculate_depressive_between(mini_df, depressive):
-    """
-    GEHAD
-    """
-    print('DEP')
-    mini_above = sum_same_quest(mini_df, depressive)
-    # print(mini_above)
-    list_df_3 = [col for col in mini_above.columns if f'mini_a3' in col]
-    # print(list_df_3)
-    list_1_2 = list(set(list(mini_above.columns)) - set(list_df_3))
-    # print(list_1_2)
-    # Add the results of questions 1 and 2 together
-    mini_above[f'between_sum_mini_a_1_2'] = mini_above.loc[:,list_1_2].sum(axis=1)
-    # Add the results of questions 3
-    mini_above[f'between_sum_mini_a_3_all'] = mini_above.loc[:,list_df_3].sum(axis=1)
-    # Add all questions for depressive together
-    mini_above[f'between_sum_mini_a_all'] = mini_above.loc[:,list_df_3 + list_1_2].sum(axis=1)
-    sum_col = ['project_pseudo_id'] + [col for col in mini_above.columns if f'between_sum_mini_a' in col]
-    # print(mini_above[sum_col])
-    return mini_above[sum_col]
+def get_data(MINI_path, mini_df):
+    if mini_df.empty:
+        mini_df = pd.read_csv(f'{MINI_path}/MINI_test.tsv.gz', sep='\t', encoding='utf-8',
+                                compression='gzip')
+    cat_columns = ['project_pseudo_id']
+    for col in mini_df.columns:
+        if 'mini' in col:
+            # print(col)
+            cat_columns.append(col)
+    df_cat = mini_df[cat_columns]
+    df_cat = df_cat.drop_duplicates().reset_index()
+    del df_cat["index"]
+    print(df_cat)
+    print(df_cat.columns)
+    # df_cat.to_csv(f'{MINI_path}sep_mini_depressive.tsv.gz', sep='\t',
+    #                      encoding='utf-8', compression='gzip', index=False)
+    return df_cat
 
-def calculate_anxiety_between(mini_df, anxiety):
-    """
-    GEHAD
-    """
-    list_3b = [col for col in mini_df.columns if f'minia3b' in col]
-    list_3f = [col for col in mini_df.columns if f'minia3f' in col]
-    for value in list_3b + list_3f:
-        value = value.split('_')[1].replace('mini', '') #re.sub(r"covt.*_m", "m", value)
-        anxiety.add(value) #covt\d*_=
-    mini_above = sum_same_quest(mini_df, anxiety)
-    # print(mini_above)
-    # print(mini_above.columns)
-    list_1_ab = [col for col in mini_above.columns if f'_mini_o1' in col]
-    # print(list_1_ab)
-    list_2 = [col for col in mini_above.columns if f'mini_o2' in col]
-    # print(list_2)
-    # TODO fatique toevoegen
-    list_3_without = [col for col in mini_above.columns if f'mini_a3b' in col]
-    list_3_without = list_3_without + [col for col in mini_above.columns if f'mini_a3f' in col]
-    list_3_without = list_3_without + [col for col in mini_above.columns if f'mini_o3' in col]
-    # print(list_3_without)
-    # Add the results of questions 1 
-    mini_above[f'between_sum_mini_o_1ab'] = mini_above.loc[:,list_1_ab].sum(axis=1)
-    # Add the results of questions 2
-    mini_above[f'between_sum_mini_o_2'] = mini_above.loc[:,list_2].sum(axis=1)
-    # Add the results of questions 3
-    mini_above[f'between_sum_mini_o_3_all'] = mini_above.loc[:,list_3_without].sum(axis=1)
-    sum_col = ['project_pseudo_id'] + [col for col in mini_above.columns if f'between_sum_mini_o' in col]
-    # print(mini_above[sum_col])
-    return mini_above[sum_col]
-
-
-def mini_covid(path_results, MINI_path):
-    """
-    GEHAD
-    """
-    # Empty sets and dataframes
-    set_participants = set()
-    set_cols = set()
+def add_mini(path_directory, MINI_path):
     mini_df = pd.DataFrame(columns=['project_pseudo_id'])
-    # Loop over questionnaire results
-    for files in os.listdir(path_results):
-        # If file starts with 'cov'
+    # print(new_df)
+    interesting_column = '_mini'
+    interesting_column_2 = '_symptoms_adu_q_1_q'
+
+    
+    for files in os.listdir(path_directory):
         if files.startswith('cov'):
-            filenum = files.split('_')[2]
-            print(filenum)
-            # Read dataframe
-            df = pd.read_csv(f'{path_results}{files}', sep=',', encoding='utf-8')
-            # Create nan values from the following values in the list 
+            print(files)
+            df = pd.read_csv(f'{path_directory}{files}', sep=',', encoding='utf-8')
+            for col in df.columns:
+                if 'responsedate' in col:
+                    print(col)
+                    response_col = col
+            # Replace none_values with np.nan in df
             none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
             df[df.isin(none_value)] = np.nan
-            # Update set of participants
-            set_participants.update(list(df['project_pseudo_id']))
-            # Get columns
-            mini_col = [col for col in df.columns if 'mini' in col]
-            fatique = [col for col in df.columns if re.match(r'.*_fatigue_adu_q_[12]_[bad]', col)]            
-            # Merge the selected dataframe to mini_df
-            mini_df = pd.merge(mini_df, df[['project_pseudo_id'] + mini_col + fatique], on=['project_pseudo_id'], how='outer')
-            # Make set of columns names
-            for i in list(mini_col + fatique):
-                # Replace covt{num} with ''
-                set_cols.add(i.replace(f'cov{filenum}', ''))
-    mini_df.to_csv(f"{MINI_path}between_mini.tsv.gz", sep='\t',
-                        encoding='utf-8', compression='gzip', index=False)
+            for col in df.columns:  
+                if interesting_column in col or interesting_column_2 in col:
+                    # print(col)
+                    # print(set(df[col]))
+                    # variables_df = pd.read_csv(f"{config['path_questionnaire_enumerations']}{files.replace('results', 'enumerations')}", sep=',', encoding='utf-8')
+                    # select_var = variables_df[variables_df['variable_name'] == col]
+                    # print(select_var)
+                    # for index, row in select_var.iterrows():
+                    #     print(row['enumeration_en'])
+                    df[col] = df[col].astype(str).replace('nan', np.nan)
+                    # print(set(df[col]))
+                    if len(mini_df) < 1:
+                        mini_df = df[['project_pseudo_id', col, response_col]]
+                    else:
+                        col_dup = list(set(df[['project_pseudo_id', col, response_col]].columns) & set(mini_df.columns))
+                        mini_df = pd.merge(mini_df, df[['project_pseudo_id', col, response_col]], on=col_dup, how="outer")
+
+    print(mini_df)
+    mini_df.to_csv(f'{MINI_path}MINI_test.tsv.gz', sep='\t',
+                         encoding='utf-8', compression='gzip', index=False)
     return mini_df
-
-
-def divide_columns(mini_df, MINI_path):
-    """
-    GEHAD
-    """
-    if mini_df.empty:
-        mini_df = pd.read_csv(f"{MINI_path}between_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
-    set_participants = set(mini_df['project_pseudo_id'])
-    set_cols = set()
-    for col in mini_df.columns:
-        if re.match(r'.*_fatigue_adu_q_[12]_[bad]', col):
-            # Replace covt{num} with ''
-            set_cols.add(re.sub(r"covt.*_f", "f", col))
-        if 'mini' in col:
-            # Replace covt{num} with ''
-            set_cols.add(re.sub(r"covt.*_m", "m", col)) #covt\d*_
-
-    # Empty sets and lists
-    set_type_mini = set()
-    depressive = list()
-    depressive_set = set()
-    anxiety = list()
-    anxiety_set = set()
-    # Loop over columns mini_df
-    for col in mini_df.columns:
-        # Check if 'mini' is in column
-        if 'mini' in col:
-            type_mini = col.split('mini')[1].split('_')[0]
-            set_type_mini.add(type_mini)
-            # Check if 'a' in column Depressive
-            if re.match(r'^a.*', type_mini):
-                depressive.append(col)
-                depressive_set.add(type_mini)
-            # Check if 'o' in column Anxiety
-            elif re.match(r'^o.*', type_mini):
-                anxiety.append(col)
-                anxiety_set.add(type_mini)
-        # Check if 'fatigue' is in column
-        if 'fatigue' in col:
-            fatigue = f"f{col.split('_f')[1]}"
-            anxiety.append(col)
-            anxiety_set.add(fatigue)
-
-    # mini_df = mini_df.set_index('project_pseudo_id')
-    df_dep = calculate_depressive_between(mini_df, list(depressive_set))
-    df_anx = calculate_anxiety_between(mini_df, anxiety_set)
-    # calculate_anxiety_before(mini_df, anxiety, num_quest)
-    merge_between = pd.merge(df_anx, df_dep, on=['project_pseudo_id'], how='outer')
-    merge_between['major_depressive_episode'] = merge_between['major_depressive_episode'].fillna(0)
     
-    merge_between['generalized_anxiety_disorder'] = merge_between['generalized_anxiety_disorder'].fillna(0)
     
-    merge_between.to_csv(f"{MINI_path}between_mini.tsv.gz", sep='\t',
-                        encoding='utf-8', compression='gzip', index=False)
-    return mini_df, merge_between
-
+ 
+    
 
 def main():
     config = get_config()
-    # Different paths
     my_folder = config['my_folder']
     path_myfolder = config['path_read_QOL']
     path_variables = config['path_questionnaire_variables']
     path_results = config['path_questionnaire_results']
     path_enumerations = config['path_questionnaire_enumerations']
     MINI_path = config['MINI']
+
     mini_df = pd.DataFrame()
-            # # Call mini_before_covid
-            # before_mini_df = mini_before_covid(path_myfolder)
-            # before_mini_df = pd.read_csv(f"{path_myfolder}df/before_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
-            # before_mini_df = before_mini_df.set_index('project_pseudo_id')
-            # before_mini_df = before_mini_df.reset_index(level=0)
-            # before_2a = ['project_pseudo_id'] + [col for col in before_mini_df.columns if f'before_2a_sum' in col]
-            # before_mini_df = before_mini_df[before_2a]
-            # print(before_mini_df)
-    # Call mini_covid
-    mini_df = mini_covid(path_results, MINI_path)
-    mini_df, merge_between = divide_columns(mini_df, MINI_path)
-            # Call select_label
-            # merge_before_between = select_label(before_mini_df, set_participants, df_dep, df_anx, MINI_path)
-
-    
-    
-    
-    # print()
-
-    # print('DONE')
+    mini_df = add_mini(path_results, MINI_path)
+    print('begin met functies')
+    mini_df = get_data(MINI_path, mini_df)
+    # print('calculating_depressive')
+    # df_mini_depressive = calculating_depressive(path_myfolder, mini_df)
+    # print('get_other_quest_anxiety')
+    # mini_df, set_3c, set_3d, set_3f =get_other_quest_anxiety(path_myfolder, path_variables, path_results, path_enumerations, mini_df)
+    # print('calculating_anxiety')
+    # df_mini_anxiety = calculating_anxiety(path_myfolder, mini_df, set_3c, set_3d, set_3f)
+    # print('merge')
+    # mini_df_all = pd.merge(df_mini_depressive, df_mini_anxiety, on=['project_pseudo_id'], how='outer')
+    # mini_df_all.to_csv(f'{path_myfolder}df/sep_mini_depressive_anxiety.tsv.gz', sep='\t',
+    #                      encoding='utf-8', compression='gzip', index=False)
+    # print(mini_df)
+    print('DONE')
 
 
 if __name__ == '__main__':
