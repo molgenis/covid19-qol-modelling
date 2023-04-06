@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 
 
 
-def add_weather_QOL(data_QOL_path, create_model):
+def add_weather_QOL(data_QOL_path, question_15_or_more_path):
     """
     Add the weather data #https://www.knmi.nl/nederland-nu/klimatologie/daggegevens
     data comes from
@@ -39,7 +39,7 @@ def add_weather_QOL(data_QOL_path, create_model):
         knmi_data[f'{days}day_rolling_avg_temp'] = knmi_data.rolling(days, min_periods=1)['avg_temp'].mean()
         knmi_data[f'{days}_max_temp'] = knmi_data.rolling(days, min_periods=1)['Maximum Temperature (\u00B0C)'].mean()
     # read_file 
-    df = pd.read_csv(f'{create_model}num_quest_1_filter.tsv.gz', sep='\t',
+    df = pd.read_csv(f'{question_15_or_more_path}num_quest_1_filter.tsv.gz', sep='\t',
                      encoding='utf-8', compression='gzip') # num_quest_1_filter, QOL_data_VL29
     # Select columns
     df = df[['project_pseudo_id', 'responsedate', 'qualityoflife']]

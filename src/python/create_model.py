@@ -193,8 +193,9 @@ def main():
     config = get_config()
     create_model = config['create_model']
     data_QOL_path = config['data_QOL']
+    question_15_or_more_path = config['question_15_or_more']
     # Add different data to one dataframe
-    final_dataframe, total_df, df_participants = add_weather_QOL(data_QOL_path, create_model) 
+    final_dataframe, total_df, df_participants = add_weather_QOL(data_QOL_path, question_15_or_more_path) 
     final_dataframe, total_df, df_participants = add_hospitalization(final_dataframe, total_df, df_participants, data_QOL_path)
     final_dataframe, total_df, df_participants = add_stringency_index(final_dataframe, total_df, df_participants, data_QOL_path)
     final_dataframe, total_df, df_participants = sunrise_sunset(final_dataframe, total_df, df_participants, data_QOL_path)
