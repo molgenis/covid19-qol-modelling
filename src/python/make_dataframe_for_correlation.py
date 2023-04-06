@@ -158,7 +158,7 @@ def add_other_cat(final_dataframe, data_QOL_path):
     """
     news_sentiment = pd.read_excel(
         f'{data_QOL_path}news_sentiment_data.xlsx', 'Data')
-    df = pd.merge(df, news_sentiment, how='left', on=['date'])
+    final_dataframe = pd.merge(final_dataframe, news_sentiment, how='left', on=['date'])
     finacial_data = pd.read_excel(
         f'{data_QOL_path}finacial_data.xlsx')
     final_dataframe = pd.merge(final_dataframe, finacial_data, how='left', on=['date'])
