@@ -279,17 +279,17 @@ def main():
     mini_df = add_mini(path_results, MINI_path)
     print('begin met functies')
     mini_df = get_data(MINI_path, mini_df)
-    # print('calculating_depressive')
-    # df_mini_depressive = calculating_depressive(path_myfolder, mini_df)
-    # print('get_other_quest_anxiety')
-    # mini_df, set_3c, set_3d, set_3f =get_other_quest_anxiety(path_myfolder, path_variables, path_results, path_enumerations, mini_df)
-    # print('calculating_anxiety')
-    # df_mini_anxiety = calculating_anxiety(path_myfolder, mini_df, set_3c, set_3d, set_3f)
-    # print('merge')
-    # mini_df_all = pd.merge(df_mini_depressive, df_mini_anxiety, on=['project_pseudo_id'], how='outer')
-    # mini_df_all.to_csv(f'{path_myfolder}df/sep_mini_depressive_anxiety.tsv.gz', sep='\t',
-    #                      encoding='utf-8', compression='gzip', index=False)
-    # print(mini_df)
+    print('calculating_depressive')
+    df_mini_depressive = calculating_depressive(path_myfolder, mini_df)
+    print('get_other_quest_anxiety')
+    mini_df, set_3c, set_3d, set_3f =get_other_quest_anxiety(path_myfolder, path_variables, path_results, path_enumerations, mini_df)
+    print('calculating_anxiety')
+    df_mini_anxiety = calculating_anxiety(path_myfolder, mini_df, set_3c, set_3d, set_3f)
+    print('merge')
+    mini_df_all = pd.merge(df_mini_depressive, df_mini_anxiety, on=['project_pseudo_id'], how='outer')
+    mini_df_all.to_csv(f'{MINI_path}sep_mini_depressive_anxiety.tsv.gz', sep='\t',
+                         encoding='utf-8', compression='gzip', index=False)
+    # print(mini_df_all)
     print('DONE')
 
 
