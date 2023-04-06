@@ -91,7 +91,7 @@ def filter_data(df_quest, information_num_quest_path):
     #                     index=False)
     return df_quest_only
     
-def open_file(information_num_quest_path):
+def open_file(information_num_quest_path, df):
     """
     
     """
