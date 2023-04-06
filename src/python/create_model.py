@@ -191,14 +191,14 @@ def run_models(qol_df, total_df, rolling_avg_temp_col, daylight_hours_col, myfil
 
 def main():
     config = get_config()
-    path_read_QOL = config['path_read_QOL']
     create_model = config['create_model']
+    data_QOL_path = config['data_QOL']
     # Add different data to one dataframe
-    final_dataframe, total_df, df_participants = add_weather_QOL(path_read_QOL, create_model) 
-    final_dataframe, total_df, df_participants = add_hospitalization(final_dataframe, total_df, df_participants, path_read_QOL)
-    final_dataframe, total_df, df_participants = add_stringency_index(final_dataframe, total_df, df_participants, path_read_QOL)
-    final_dataframe, total_df, df_participants = sunrise_sunset(final_dataframe, total_df, df_participants, path_read_QOL)
-    df_corr = add_other_cat(final_dataframe, path_read_QOL)
+    final_dataframe, total_df, df_participants = add_weather_QOL(data_QOL_path, create_model) 
+    final_dataframe, total_df, df_participants = add_hospitalization(final_dataframe, total_df, df_participants, data_QOL_path)
+    final_dataframe, total_df, df_participants = add_stringency_index(final_dataframe, total_df, df_participants, data_QOL_path)
+    final_dataframe, total_df, df_participants = sunrise_sunset(final_dataframe, total_df, df_participants, data_QOL_path)
+    df_corr = add_other_cat(final_dataframe, data_QOL_path)
     
     # Calculate correlation between QOL and different variables (Table ...)
     calculate_cor(df_corr, create_model)    

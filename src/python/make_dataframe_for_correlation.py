@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 
 
 
-def add_weather_QOL(path_read_QOL, create_model):
+def add_weather_QOL(data_QOL_path, create_model):
     """
     Add the weather data #https://www.knmi.nl/nederland-nu/klimatologie/daggegevens
     data comes from
@@ -27,7 +27,7 @@ def add_weather_QOL(path_read_QOL, create_model):
     """
     # Read file
     knmi_data = pd.read_excel(
-        f'{path_read_QOL}Weather_data.xlsx')
+        f'{data_QOL_path}Weather_data.xlsx')
     knmi_data.drop('Unnamed: 0', axis=1, inplace=True)
     knmi_data = knmi_data.replace(r'^\s*$', np.NaN, regex=True)
     knmi_data['date'] = pd.to_datetime(knmi_data['date'])
@@ -68,7 +68,7 @@ def add_weather_QOL(path_read_QOL, create_model):
     return final_dataframe, total_df, df_participants
 
 
-def add_hospitalization(final_dataframe, total_df, df_participants, path_read_QOL):
+def add_hospitalization(final_dataframe, total_df, df_participants, data_QOL_path):
     """
     Add hospitalization data RIVM
     data comes from # https://data.rivm.nl/meta/srv/dut/catalog.search#/metadata/4f4ad069-8f24-4fe8-b2a7-533ef27a899f
@@ -78,8 +78,8 @@ def add_hospitalization(final_dataframe, total_df, df_participants, path_read_QO
     df_participants:
     """
     # Read files
-    hospitalization_1 = pd.read_csv(f'{path_read_QOL}COVID-19_ziekenhuisopnames.csv',sep=';', encoding='utf-8')
-    hospitalization_2 = pd.read_csv(f'{path_read_QOL}COVID-19_ziekenhuisopnames_tm_03102021.csv',sep=';', encoding='utf-8')
+    hospitalization_1 = pd.read_csv(f'{data_QOL_path}COVID-19_ziekenhuisopnames.csv',sep=';', encoding='utf-8')
+    hospitalization_2 = pd.read_csv(f'{data_QOL_path}COVID-19_ziekenhuisopnames_tm_03102021.csv',sep=';', encoding='utf-8')
     # Concat files
     hospitalization = pd.concat([hospitalization_1, hospitalization_2])
     hospitalization['Date_of_statistics'] = pd.to_datetime(hospitalization['Date_of_statistics'])
@@ -94,7 +94,7 @@ def add_hospitalization(final_dataframe, total_df, df_participants, path_read_QO
     return final_dataframe, total_df, df_participants
 
 
-def add_stringency_index(final_dataframe, total_df, df_participants, path_read_QOL):
+def add_stringency_index(final_dataframe, total_df, df_participants, data_QOL_path):
     """
     Add stringency index and other information of outwoldindata
     data comes from #https://ourworldindata.org/covid-stringency-index#learn-more-about-the-data-source-the-oxford-coronavirus-government-response-tracker
@@ -104,7 +104,7 @@ def add_stringency_index(final_dataframe, total_df, df_participants, path_read_Q
     df_participants:
     """
     stringency_index = pd.read_csv(
-        f'{path_read_QOL}owid-covid-data.csv', sep=';',
+        f'{data_QOL_path}owid-covid-data.csv', sep=';',
         encoding='utf-8')
     # Select on the Netherlands
     stringency_index = stringency_index[stringency_index['location'] == 'Netherlands']
@@ -116,7 +116,7 @@ def add_stringency_index(final_dataframe, total_df, df_participants, path_read_Q
     total_df = pd.merge(total_df, stringency_index, how="outer", on=["date"])
     return final_dataframe, total_df, df_participants
 
-def sunrise_sunset(final_dataframe, total_df, df_participants, path_read_QOL):
+def sunrise_sunset(final_dataframe, total_df, df_participants, data_QOL_path):
     """ 
     Add sunrise - sunset data
     data comes from #https://www.msimons.nl/tools/daglicht-tabel/index.php?year=2020&location=Groningen
@@ -127,7 +127,7 @@ def sunrise_sunset(final_dataframe, total_df, df_participants, path_read_QOL):
     """
     # Read data
     daylight_hours = pd.read_csv(
-        f'{path_read_QOL}sunrise_sunset.csv', sep=';',
+        f'{data_QOL_path}sunrise_sunset.csv', sep=';',
         encoding='utf-8')
     daylight_hours['date'] = pd.to_datetime(daylight_hours['date'], dayfirst=True)
     daylight_hours.dropna(inplace=True)
@@ -150,38 +150,20 @@ def sunrise_sunset(final_dataframe, total_df, df_participants, path_read_QOL):
     total_df = pd.merge(total_df, daylight_hours, how="outer", on=["date"])
     return final_dataframe, total_df, df_participants
 
-def add_other_cat(final_dataframe, path_read_QOL):
+def add_other_cat(final_dataframe, data_QOL_path):
     """
     Add financial data
     Return
     final_dataframe:
     """
     news_sentiment = pd.read_excel(
-        f'{path_read_QOL}news_sentiment_data.xlsx', 'Data')
+        f'{data_QOL_path}news_sentiment_data.xlsx', 'Data')
     df = pd.merge(df, news_sentiment, how='left', on=['date'])
     finacial_data = pd.read_excel(
-        f'{path_read_QOL}finacial_data.xlsx')
+        f'{data_QOL_path}finacial_data.xlsx')
     final_dataframe = pd.merge(final_dataframe, finacial_data, how='left', on=['date'])
 
     
     
     return final_dataframe
 
-def main():
-    config = get_config()
-    path_read_QOL = config['data_QOL']
-    # Add different data to one dataframe
-    final_dataframe, total_df, df_participants = add_weather_QOL(path_read_QOL) 
-    final_dataframe, total_df, df_participants = add_hospitalization(final_dataframe, total_df, df_participants, path_read_QOL)
-    final_dataframe, total_df, df_participants = add_stringency_index(final_dataframe, total_df, df_participants, path_read_QOL)
-    final_dataframe, total_df, df_participants = sunrise_sunset(final_dataframe, total_df, df_participants, path_read_QOL)
-    df_corr = add_other_cat(final_dataframe, path_read_QOL)
-    # Save file
-    df_corr.to_csv(f'{path_read_QOL}df_corr.tsv.gz', 
-                        sep='\t', encoding='utf-8', compression='gzip')
-
-    print('DONE')
-
-
-if __name__ == '__main__':
-    main()
