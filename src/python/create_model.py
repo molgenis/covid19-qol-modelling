@@ -201,24 +201,24 @@ def main():
     final_dataframe, total_df, df_participants = sunrise_sunset(final_dataframe, total_df, df_participants, data_QOL_path)
     df_corr = add_other_cat(final_dataframe, data_QOL_path)
     
-    # Calculate correlation between QOL and different variables (Table ...)
-    calculate_cor(df_corr, create_model)    
+    # # Calculate correlation between QOL and different variables (Table ...)
+    # calculate_cor(df_corr, create_model)    
 
-    # # Write files
-    # total_df_nan.to_csv(f'{create_model}4_values_per_date.tsv.gz', 
-    #                     sep='\t', encoding='utf-8', compression='gzip')
+    # # # Write files
+    # # total_df_nan.to_csv(f'{create_model}4_values_per_date.tsv.gz', 
+    # #                     sep='\t', encoding='utf-8', compression='gzip')
 
-    # final_dataframe.to_csv(f'{create_model}merge_final_dataframe_with_rollingavg.tsv.gz', sep='\t', encoding='utf-8' ,
-    #                        compression='gzip')
+    # # final_dataframe.to_csv(f'{create_model}merge_final_dataframe_with_rollingavg.tsv.gz', sep='\t', encoding='utf-8' ,
+    # #                        compression='gzip')
 
 
-    myfile = open(f'{create_model}overview_predicted.tsv', 'w')
-    myfile.writelines(f'model\tvalues\tlen(values)\tdaily_hos\trolling_temp\tdaylight\tRMSE\tR2\n')
-    # Call run_models
-    myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
-    myfile.close()
+    # myfile = open(f'{create_model}overview_predicted.tsv', 'w')
+    # myfile.writelines(f'model\tvalues\tlen(values)\tdaily_hos\trolling_temp\tdaylight\tRMSE\tR2\n')
+    # # Call run_models
+    # myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
+    # myfile.close()
 
-    print('DONE')
+    # print('DONE')
 
 
 if __name__ == '__main__':
