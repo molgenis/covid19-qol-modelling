@@ -86,7 +86,7 @@ def calculate_anxiety_between(mini_df, anxiety):
     return mini_above[sum_col]
 
 
-def mini_covid(path_results, path_myfolder):
+def make_mini_df(path_results, mini_path):
     # Empty sets and dataframes
     set_participants = set()
     set_cols = set()
@@ -113,9 +113,13 @@ def mini_covid(path_results, path_myfolder):
             for i in list(mini_col + fatique):
                 # Replace covt{num} with ''
                 set_cols.add(i.replace(f'cov{filenum}', ''))
-    mini_df.to_csv(f"{path_myfolder}df/between_mini.tsv.gz", sep='\t',
+    mini_df.to_csv(f"{mini_path}between_mini.tsv.gz", sep='\t',
                         encoding='utf-8', compression='gzip', index=False)
-    # mini_df = pd.read_csv(f"{path_myfolder}df/between_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
+    return mini_df
+    
+def mini_covid(mini_path, mini_df):
+    if mini_df.empty:
+        mini_df = pd.read_csv(f"{mini_path}between_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
     set_participants = set(mini_df['project_pseudo_id'])
     set_cols = set()
     for col in mini_df.columns:
@@ -152,29 +156,32 @@ def mini_covid(path_results, path_myfolder):
             anxiety.append(col)
             anxiety_set.add(fatigue)
 
-    # print(depressive_set)
-    # print('////////')
-    # print(anxiety_set)
+    print()
+    print(depressive_set)
+    print('////////')
+    print(anxiety_set)
 
-    # mini_df = mini_df.set_index('project_pseudo_id')
-    df_dep = calculate_depressive_between(mini_df, list(depressive_set))
-    df_anx = calculate_anxiety_between(mini_df, anxiety_set)
-    # calculate_anxiety_before(mini_df, anxiety, num_quest)
-    return mini_df, set_cols, list(set_participants), df_dep, df_anx
+    # # mini_df = mini_df.set_index('project_pseudo_id')
+    # df_dep = calculate_depressive_between(mini_df, list(depressive_set))
+    # df_anx = calculate_anxiety_between(mini_df, anxiety_set)
+    # # calculate_anxiety_before(mini_df, anxiety, num_quest)
+    # return mini_df, set_cols, list(set_participants), df_dep, df_anx
 
 
 def main():
     config = get_config()
     # Different paths
     my_folder = config['my_folder']
+    mini_path = config['MINI']
     path_myfolder = config['path_read_QOL']
     path_variables = config['path_questionnaire_variables']
     path_results = config['path_questionnaire_results']
     path_enumerations = config['path_questionnaire_enumerations']
-    # Call mini_before_covid
+    mini_df = pd.DataFrame()
     
     # Call mini_covid
-    mini_df, set_cols, set_participants, df_dep, df_anx = mini_covid(path_results, path_myfolder)
+    mini_df = make_mini_df(path_results, mini_path)
+    mini_covid(mini_path, mini_df)
     # Call select_label
     
     print('DONE')

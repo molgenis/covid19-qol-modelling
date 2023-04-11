@@ -101,14 +101,14 @@ def calculate_anxiety_before(df, anxiety, num_quest):
     return df_select
 
 
-def mini_before_covid(path_myfolder):
+def mini_before_covid(path_myfolder, mini_path):
     # Empty dataframes
     mini = pd.DataFrame(columns=['project_pseudo_id'])
     dep_all = pd.DataFrame(columns=['project_pseudo_id'])
     aux_all = pd.DataFrame(columns=['project_pseudo_id'])
     name_date_col = ''
     # Loop over different OR (1a, 2a, 3a)
-    for num_quest in ['2a']: #['1a', '2a', '3a']
+    for num_quest in ['1a', '2a', '3a']:
         print('***************************')
         # Make lists and sets
         set_type_mini = set()
@@ -140,117 +140,59 @@ def mini_before_covid(path_myfolder):
                 name_date_col = col
                 df[name_date_col] = pd.to_datetime(df[name_date_col], errors='coerce')
 
-        print(depressive)
-        print('-----')
-        print(anxiety)
-        # # Call calculate_depressive_before
-        # df_dep = calculate_depressive_before(df, depressive, num_quest)
-    #     # Call calculate_anxiety_before
-    #     df_anx = calculate_anxiety_before(df, anxiety, num_quest)
-    #     # Only filter 3a by date as it may contain answers from during the pandemic as well
-    #     if num_quest == '3a':
-    #         df_date = df[['project_pseudo_id', name_date_col]]
-    #         df_date = df_date[(df_date[name_date_col] < '2020-01')]
-    #         df_date['3a_before_2020'] = 'yes'
-    #     else:
-    #         df_date = df[['project_pseudo_id', name_date_col]]
-    #     # Merge df_date and df_anx
-    #     aux_all = pd.merge(aux_all, df_anx, on=['project_pseudo_id'], how='outer')
-    #     aux_all = pd.merge(df_date, aux_all, on=['project_pseudo_id'], how='outer')
-    #     # Merge df_date and df_dep
-    #     dep_all = pd.merge(dep_all, df_dep, on=['project_pseudo_id'], how='outer')
-    #     dep_all = pd.merge(df_date, dep_all, on=['project_pseudo_id'], how='outer')
-    #     # Merge df_dep, df_aux and df_date
-    #     df_dep_anx = pd.merge(df_dep, df_anx, on=['project_pseudo_id'], how='outer')
-    #     df_dep_anx = pd.merge(df_date, df_dep_anx, on=['project_pseudo_id'], how='outer')
+        # Call calculate_depressive_before
+        df_dep = calculate_depressive_before(df, depressive, num_quest)
+        # Call calculate_anxiety_before
+        df_anx = calculate_anxiety_before(df, anxiety, num_quest)
+        # Only filter 3a by date as it may contain answers from during the pandemic as well
+        if num_quest == '3a':
+            df_date = df[['project_pseudo_id', name_date_col]]
+            df_date = df_date[(df_date[name_date_col] < '2020-01')]
+            df_date['3a_before_2020'] = 'yes'
+        else:
+            df_date = df[['project_pseudo_id', name_date_col]]
+        # Merge df_date and df_anx
+        aux_all = pd.merge(aux_all, df_anx, on=['project_pseudo_id'], how='outer')
+        aux_all = pd.merge(df_date, aux_all, on=['project_pseudo_id'], how='outer')
+        # Merge df_date and df_dep
+        dep_all = pd.merge(dep_all, df_dep, on=['project_pseudo_id'], how='outer')
+        dep_all = pd.merge(df_date, dep_all, on=['project_pseudo_id'], how='outer')
+        # Merge df_dep, df_aux and df_date
+        df_dep_anx = pd.merge(df_dep, df_anx, on=['project_pseudo_id'], how='outer')
+        df_dep_anx = pd.merge(df_date, df_dep_anx, on=['project_pseudo_id'], how='outer')
 
-    # #     df_dep_anx.to_csv(f"{path_myfolder}df/{num_quest}_filter_mini_dep_aux.tsv.gz", sep='\t',
-    # #                     encoding='utf-8', compression='gzip', index=False)
-    #     # Merge all the dep_anx with mini
-    #     mini = pd.merge(mini, df_dep_anx, on=['project_pseudo_id'], how='outer')
-    # # Set index
-    # mini = mini.set_index('project_pseudo_id')
-    # aux_all = aux_all.set_index('project_pseudo_id')
-    # dep_all = dep_all.set_index('project_pseudo_id')
+        df_dep_anx.to_csv(f"{mini_path}{num_quest}_filter_mini_dep_aux.tsv.gz", sep='\t',
+                        encoding='utf-8', compression='gzip', index=False)
+        # Merge all the dep_anx with mini
+        mini = pd.merge(mini, df_dep_anx, on=['project_pseudo_id'], how='outer')
+    # Set index
+    mini = mini.set_index('project_pseudo_id')
+    aux_all = aux_all.set_index('project_pseudo_id')
+    dep_all = dep_all.set_index('project_pseudo_id')
 
-    # # mini.to_csv(f"{path_myfolder}df/ALL_filter_mini_dep_aux.tsv.gz", sep='\t',
-    # #                     encoding='utf-8', compression='gzip') #, index=False
-    # # aux_all.to_csv(f"{path_myfolder}df/aux_filter_mini.tsv.gz", sep='\t',
-    # #                     encoding='utf-8', compression='gzip') #, index=False
-    # # dep_all.to_csv(f"{path_myfolder}df/dep_filter_mini.tsv.gz", sep='\t',
-    # #                     encoding='utf-8', compression='gzip') #, index=False
-    # # Filter on the columns with before
-    # # Then you have the columns with sum of questions from before the corona
-    # before_mini = [col for col in mini.columns if 'before' in col]
-    # mini[before_mini].to_csv(f"{path_myfolder}df/before_mini.tsv.gz", sep='\t',
-    #                     encoding='utf-8', compression='gzip') #, index=False
-    # return mini[before_mini]
-    return None
-
-
-def select_label(before_mini_df, set_participants):
-    # Filter dataframe on covid participants
-    before_mini_df = before_mini_df[before_mini_df['project_pseudo_id'].isin(set_participants)]
-    # A. MAJOR DEPRESSIVE EPISODE
-    df_1_2 = before_mini_df[before_mini_df['before_2a_sum_mini_a_1_2'] >= 1]
-    major_depressive_episode = df_1_2[df_1_2['before_2a_sum_mini_a_all'] >= 5]
-    major_depressive_episode['major_depressive_episode'] = 1
-    
-    # not_major_depressive_episode = before_mini_df[~before_mini_df['project_pseudo_id'].isin(list(major_depressive_episode['project_pseudo_id']))] #df_1_2[df_1_2['before_2a_sum_mini_a_all'] < 5]
-    # not_major_depressive_episode['not_major_depressive_episode'] = 1
-    # not_major_depressive_episode['not_major_depressive_episode'] = not_major_depressive_episode['not_major_depressive_episode'].fillna(0)
-    # print(dict(Counter(list(not_major_depressive_episode['not_major_depressive_episode']))))
-
-    print('A. MAJOR DEPRESSIVE EPISODE')
-    print(len(before_mini_df))
-    print(len(df_1_2))
-    print(len(major_depressive_episode))
-    # print(len(not_major_depressive_episode))
-    print()
-    # O. GENERALIZED ANXIETY DISORDER
-    df_1 = before_mini_df[before_mini_df['before_2a_sum_mini_o_1_ab'] >= 2]
-    df_2 = df_1[df_1['before_2a_sum_mini_o_2'] >= 1]
-    generalized_anxiety_disorder = df_2[df_2['before_2a_sum_mini_o_3_all'] >= 3]
-    generalized_anxiety_disorder['generalized_anxiety_disorder'] = 1
-    # not_generalized_anxiety_disorder = before_mini_df[~before_mini_df['project_pseudo_id'].isin(list(generalized_anxiety_disorder['project_pseudo_id']))] #df_2[df_2['before_2a_sum_mini_o_3_all'] < 3]
-    # not_generalized_anxiety_disorder['not_generalized_anxiety_disorder'] = 1
-    print('O. GENERALIZED ANXIETY DISORDER')
-    print(len(before_mini_df))
-    print(len(df_1))
-    print(len(df_2))
-    print(len(generalized_anxiety_disorder))
-    # print(len(not_generalized_anxiety_disorder))
-    print()
-
-    before_mini_df = pd.merge(before_mini_df, major_depressive_episode[['project_pseudo_id', 'major_depressive_episode']], on=['project_pseudo_id'], how='outer')
-    before_mini_df['major_depressive_episode'] = before_mini_df['major_depressive_episode'].fillna(0)
-    print(dict(Counter(list(before_mini_df['major_depressive_episode']))))
-    # before_mini_df = pd.merge(before_mini_df, not_major_depressive_episode[['project_pseudo_id', 'not_major_depressive_episode']], on=['project_pseudo_id'], how='outer')
-    before_mini_df = pd.merge(before_mini_df, generalized_anxiety_disorder[['project_pseudo_id', 'generalized_anxiety_disorder']], on=['project_pseudo_id'], how='outer')
-    before_mini_df['generalized_anxiety_disorder'] = before_mini_df['generalized_anxiety_disorder'].fillna(0)
-    print(dict(Counter(list(before_mini_df['generalized_anxiety_disorder']))))
-    # before_mini_df = pd.merge(before_mini_df, not_generalized_anxiety_disorder[['project_pseudo_id', 'not_generalized_anxiety_disorder']], on=['project_pseudo_id'], how='outer')
-    return before_mini_df #major_depressive_episode, not_major_depressive_episode, generalized_anxiety_disorder, not_generalized_anxiety_disorder
+    mini.to_csv(f"{mini_path}ALL_filter_mini_dep_aux.tsv.gz", sep='\t',
+                        encoding='utf-8', compression='gzip', index=False) 
+    aux_all.to_csv(f"{mini_path}aux_filter_mini.tsv.gz", sep='\t',
+                        encoding='utf-8', compression='gzip', index=False) 
+    dep_all.to_csv(f"{mini_path}dep_filter_mini.tsv.gz", sep='\t',
+                        encoding='utf-8', compression='gzip', index=False)
+    # Filter on the columns with before
+    # Then you have the columns with sum of questions from before the corona
+    before_mini = [col for col in mini.columns if 'before' in col]
+    mini[before_mini].to_csv(f"{mini_path}before_mini.tsv.gz", sep='\t',
+                        encoding='utf-8', compression='gzip', index=False) 
+    return mini[before_mini]
 
 
 def main():
     config = get_config()
     # Different paths
     my_folder = config['my_folder']
-    path_myfolder = config['path_read_QOL']
-    path_variables = config['path_questionnaire_variables']
-    path_results = config['path_questionnaire_results']
-    path_enumerations = config['path_questionnaire_enumerations']
+    mini_path = config['MINI']
     # Call mini_before_covid
-    before_mini_df = mini_before_covid(my_folder)
-    # before_mini_df = pd.read_csv(f"{my_folder}QOL_old/df/before_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
-    # before_mini_df = before_mini_df.set_index('project_pseudo_id')
-    # before_mini_df = before_mini_df.reset_index(level=0)
-    # before_2a = ['project_pseudo_id'] + [col for col in before_mini_df.columns if f'before_2a_sum' in col]
-    # before_mini_df = before_mini_df[before_2a]
-    # print(before_mini_df)
-    
-    # print('DONE')
+    before_mini_df = mini_before_covid(my_folder, mini_path)
+
+    print('DONE')
 
 
 if __name__ == '__main__':
