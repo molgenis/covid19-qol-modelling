@@ -32,11 +32,9 @@ def sum_same_quest(mini_df, list_cat, list_fatique):
     
     Selects everyone who has answered yes to the mini question 50% or more times
     """
-    print('HOI')
     list_cat = sorted(list_cat)
     for num in list_cat:
         if 'fatigue_adu_' not in num:
-            print(num)
             mini_col = [col for col in mini_df.columns if f'mini{num}' in col]
             mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
             above_value(mini_df, mini_col, num)
@@ -61,17 +59,13 @@ def sum_same_quest(mini_df, list_cat, list_fatique):
         # Select how often 1 occurs
         mini_df[f'between_above_mini_o3c'] = mini_df[['between_above_mini_o3c_a', 'between_above_mini_o3c_b', 'between_above_mini_o3c_d']].max(axis=1)
         mini_df.drop(['between_above_mini_o3c_a', 'between_above_mini_o3c_b', 'between_above_mini_o3c_d'], axis=1, inplace=True)
-        print(mini_df)
-
 
     mini_col_above = ['project_pseudo_id'] + [col for col in mini_df.columns if f'between_above_mini_' in col]
-    print(mini_col_above)
     mini_above = mini_df[mini_col_above]
     return mini_above
 
 
 def calculate_depressive_between(mini_df, depressive):
-    print('DEP')
     mini_above = sum_same_quest(mini_df, depressive, '')
     # Select on questions
     list_df_3 = [col for col in mini_above.columns if f'mini_a3' in col]
@@ -101,27 +95,21 @@ def calculate_anxiety_between(mini_df, anxiety):
         anxiety.add(value) #covt\d*_=
     
     mini_above = sum_same_quest(mini_df, anxiety, list_fatique)
-    # df.rename(columns={'oldName1': 'newName1', 'oldName2': 'newName2'}, inplace=True)
-    # # print(mini_above)
-    # # print(mini_above.columns)
-    # list_1_ab = [col for col in mini_above.columns if f'_mini_o1' in col]
-    # # print(list_1_ab)
-    # list_2 = [col for col in mini_above.columns if f'mini_o2' in col]
-    # # print(list_2)
-    # # TODO fatique toevoegen
-    # list_3_without = [col for col in mini_above.columns if f'mini_a3b' in col]
-    # list_3_without = list_3_without + [col for col in mini_above.columns if f'mini_a3f' in col]
-    # list_3_without = list_3_without + [col for col in mini_above.columns if f'mini_o3' in col]
-    # # print(list_3_without)
-    # # Add the results of questions 1 
-    # mini_above[f'between_sum_mini_o_1ab'] = mini_above.loc[:,list_1_ab].sum(axis=1)
-    # # Add the results of questions 2
-    # mini_above[f'between_sum_mini_o_2'] = mini_above.loc[:,list_2].sum(axis=1)
-    # # Add the results of questions 3
-    # mini_above[f'between_sum_mini_o_3_all'] = mini_above.loc[:,list_3_without].sum(axis=1)
-    # sum_col = ['project_pseudo_id'] + [col for col in mini_above.columns if f'between_sum_mini_o' in col]
-    # # print(mini_above[sum_col])
-    # return mini_above[sum_col]
+    mini_above.rename(columns={'between_above_mini_a3b': 'between_above_mini_o3f', 'between_above_mini_a3f': 'between_above_mini_o3d'}, inplace=True)
+    
+    list_1_ab = [col for col in mini_above.columns if f'_mini_o1' in col]
+    list_2 = [col for col in mini_above.columns if f'mini_o2' in col]
+    list_3 = [col for col in mini_above.columns if f'mini_o3' in col]
+
+    # Add the results of questions 1 
+    mini_above[f'between_sum_mini_o_1ab'] = mini_above.loc[:,list_1_ab].sum(axis=1)
+    # Add the results of questions 2
+    mini_above[f'between_sum_mini_o_2'] = mini_above.loc[:,list_2].sum(axis=1)
+    # Add the results of questions 3
+    mini_above[f'between_sum_mini_o_3_all'] = mini_above.loc[:,list_3].sum(axis=1)
+    sum_col = ['project_pseudo_id'] + [col for col in mini_above.columns if f'between_sum_mini_o' in col]
+    
+    return mini_above[sum_col]
 
 
 def make_mini_df_between(path_results, mini_path):
@@ -194,29 +182,23 @@ def mini_between_covid(mini_path, mini_df):
             anxiety.append(col)
             anxiety_set.add(fatigue)
 
-    # # mini_df = mini_df.set_index('project_pseudo_id')
-    # df_dep = calculate_depressive_between(mini_df, list(depressive_set))
+    df_dep = calculate_depressive_between(mini_df, list(depressive_set))
     df_anx = calculate_anxiety_between(mini_df, anxiety_set)
     # # calculate_anxiety_before(mini_df, anxiety, num_quest)
-    # return mini_df, set_cols, list(set_participants), df_dep, df_anx
+    return mini_df, list(set_participants), df_dep, df_anx
 
 
 def main():
     config = get_config()
     # Different paths
-    my_folder = config['my_folder']
     mini_path = config['MINI']
-    path_myfolder = config['path_read_QOL']
-    path_variables = config['path_questionnaire_variables']
     path_results = config['path_questionnaire_results']
-    path_enumerations = config['path_questionnaire_enumerations']
     mini_df = pd.DataFrame()
     
-    # Call mini_covid
-    # mini_df = make_mini_df_between(path_results, mini_path)
+    # Call functions
+    mini_df = make_mini_df_between(path_results, mini_path)
     mini_between_covid(mini_path, mini_df)
-    # Call select_label
-    
+
     print('DONE')
 
 

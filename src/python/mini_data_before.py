@@ -119,7 +119,6 @@ def mini_before_covid(path_myfolder, mini_path):
         print(num_quest)
         # Read dataframe
         df = pd.read_csv(f"{path_myfolder}QOL_old/df/{num_quest}_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
-        print(list(df.columns))
         # Create nan values from the following values in the list 
         none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
         df[df.isin(none_value)] = np.nan
