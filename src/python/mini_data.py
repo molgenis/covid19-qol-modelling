@@ -15,9 +15,17 @@ from collections import Counter
 import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
+from mini_data_before import mini_before_covid
+from mini_data_between import make_mini_df_between, mini_between_covid
 
 
 def select_label(before_mini_df, set_participants):
+    """
+    
+    set_participants: set with participants who also completed the COVID questionnaires (and hereby mini questions):
+                        mini_df = pd.read_csv(f"{mini_path}between_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
+                        set_participants = set(mini_df['project_pseudo_id'])
+    """
     # Filter dataframe on covid participants
     before_mini_df = before_mini_df[before_mini_df['project_pseudo_id'].isin(set_participants)]
     # A. MAJOR DEPRESSIVE EPISODE
@@ -71,9 +79,17 @@ def main():
     path_variables = config['path_questionnaire_variables']
     path_results = config['path_questionnaire_results']
     path_enumerations = config['path_questionnaire_enumerations']
+
+    mini_df = pd.DataFrame()
+
+    before_mini_df = mini_before_covid(my_folder, mini_path)
+    mini_df = make_mini_df_between(path_results, mini_path)
+    mini_between_covid(mini_path, mini_df)
+
+    # before_mini_df = select_label(before_mini_df, set_participants)
     
 
-    
+
     
     print('DONE')
 
