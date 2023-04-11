@@ -35,8 +35,8 @@ def sum_same_quest(mini_df, list_cat, list_fatique):
     print('HOI')
     list_cat = sorted(list_cat)
     for num in list_cat:
-        print(num)
-        if 'fatigue' not in num:
+        if 'fatigue_adu_' not in num:
+            print(num)
             mini_col = [col for col in mini_df.columns if f'mini{num}' in col]
             mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
             above_value(mini_df, mini_col, num)
@@ -55,17 +55,17 @@ def sum_same_quest(mini_df, list_cat, list_fatique):
         frag_a = [col for col in list_fatique if col.endswith('a')]
         frag_b = [col for col in list_fatique if col.endswith('b')]
         frag_d = [col for col in list_fatique if col.endswith('d')]
-        print()
-        print(frag_a)
-        print()
-        print(frag_b)
-        print()
-        print(frag_d)
-        # above_value(mini_df, frag_a, f'o3c_a')
-        # above_value(mini_df, frag_b, f'o3c_a')
-        # above_value(mini_df, frag_d, f'o3c_a')
+        above_value(mini_df, frag_a, f'o3c_a')
+        above_value(mini_df, frag_b, f'o3c_b')
+        above_value(mini_df, frag_d, f'o3c_d')
+        # Select how often 1 occurs
+        mini_df[f'between_above_mini_o3c'] = mini_df[['between_above_mini_o3c_a', 'between_above_mini_o3c_b', 'between_above_mini_o3c_d']].max(axis=1)
+        mini_df.drop(['between_above_mini_o3c_a', 'between_above_mini_o3c_b', 'between_above_mini_o3c_d'], axis=1, inplace=True)
+        print(mini_df)
+
 
     mini_col_above = ['project_pseudo_id'] + [col for col in mini_df.columns if f'between_above_mini_' in col]
+    print(mini_col_above)
     mini_above = mini_df[mini_col_above]
     return mini_above
 
@@ -99,13 +99,9 @@ def calculate_anxiety_between(mini_df, anxiety):
     for value in list_3b + list_3f:
         value = value.split('_')[1].replace('mini', '') #re.sub(r"covt.*_m", "m", value)
         anxiety.add(value) #covt\d*_=
-    print()
-    print(sorted(list(anxiety)))
-    print()
-    print(list_3b)
-    print()
-    print(list_3b)
+    
     mini_above = sum_same_quest(mini_df, anxiety, list_fatique)
+    # df.rename(columns={'oldName1': 'newName1', 'oldName2': 'newName2'}, inplace=True)
     # # print(mini_above)
     # # print(mini_above.columns)
     # list_1_ab = [col for col in mini_above.columns if f'_mini_o1' in col]
