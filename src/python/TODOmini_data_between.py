@@ -20,8 +20,13 @@ warnings.filterwarnings('ignore')
 
 
 def sum_same_quest(mini_df, list_cat):
+    """
+    
+    Selects everyone who has answered yes to the mini question 50% or more times
+    """
     list_cat = sorted(list_cat)
     for num in list_cat:
+        print(num)
         if 'fatigue' not in num:
             mini_col = [col for col in mini_df.columns if f'mini{num}' in col]
             mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
@@ -42,20 +47,20 @@ def sum_same_quest(mini_df, list_cat):
 def calculate_depressive_between(mini_df, depressive):
     print('DEP')
     mini_above = sum_same_quest(mini_df, depressive)
-    # print(mini_above)
-    list_df_3 = [col for col in mini_above.columns if f'mini_a3' in col]
-    # print(list_df_3)
-    list_1_2 = list(set(list(mini_above.columns)) - set(list_df_3))
-    # print(list_1_2)
-    # Add the results of questions 1 and 2 together
-    mini_above[f'between_sum_mini_a_1_2'] = mini_above.loc[:,list_1_2].sum(axis=1)
-    # Add the results of questions 3
-    mini_above[f'between_sum_mini_a_3_all'] = mini_above.loc[:,list_df_3].sum(axis=1)
-    # Add all questions for depressive together
-    mini_above[f'between_sum_mini_a_all'] = mini_above.loc[:,list_df_3 + list_1_2].sum(axis=1)
-    sum_col = ['project_pseudo_id'] + [col for col in mini_above.columns if f'between_sum_mini_a' in col]
-    # print(mini_above[sum_col])
-    return mini_above[sum_col]
+    # # print(mini_above)
+    # list_df_3 = [col for col in mini_above.columns if f'mini_a3' in col]
+    # # print(list_df_3)
+    # list_1_2 = list(set(list(mini_above.columns)) - set(list_df_3))
+    # # print(list_1_2)
+    # # Add the results of questions 1 and 2 together
+    # mini_above[f'between_sum_mini_a_1_2'] = mini_above.loc[:,list_1_2].sum(axis=1)
+    # # Add the results of questions 3
+    # mini_above[f'between_sum_mini_a_3_all'] = mini_above.loc[:,list_df_3].sum(axis=1)
+    # # Add all questions for depressive together
+    # mini_above[f'between_sum_mini_a_all'] = mini_above.loc[:,list_df_3 + list_1_2].sum(axis=1)
+    # sum_col = ['project_pseudo_id'] + [col for col in mini_above.columns if f'between_sum_mini_a' in col]
+    # # print(mini_above[sum_col])
+    # return mini_above[sum_col]
 
 def calculate_anxiety_between(mini_df, anxiety):
     list_3b = [col for col in mini_df.columns if f'minia3b' in col]
@@ -161,8 +166,8 @@ def mini_covid(mini_path, mini_df):
     print('////////')
     print(anxiety_set)
 
-    # # mini_df = mini_df.set_index('project_pseudo_id')
-    # df_dep = calculate_depressive_between(mini_df, list(depressive_set))
+    # mini_df = mini_df.set_index('project_pseudo_id')
+    df_dep = calculate_depressive_between(mini_df, list(depressive_set))
     # df_anx = calculate_anxiety_between(mini_df, anxiety_set)
     # # calculate_anxiety_before(mini_df, anxiety, num_quest)
     # return mini_df, set_cols, list(set_participants), df_dep, df_anx
