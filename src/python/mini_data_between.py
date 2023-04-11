@@ -40,9 +40,9 @@ def sum_same_quest(mini_df, list_cat):
             mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
             above_value(mini_df, mini_col, num)
         else:
-            frag_a = [col for col in mini_df.columns if col.endswith('a') in col]
-            frag_b = [col for col in mini_df.columns if col.endswith('b') in col]
-            frag_d = [col for col in mini_df.columns if col.endswith('d') in col]
+            frag_a = [col for col in mini_df.columns if col.endswith('a')]
+            frag_b = [col for col in mini_df.columns if col.endswith('b')]
+            frag_d = [col for col in mini_df.columns if col.endswith('d')]
             print(frag_a)
             print(frag_b)
             print(frag_d)
@@ -76,6 +76,10 @@ def calculate_depressive_between(mini_df, depressive):
 def calculate_anxiety_between(mini_df, anxiety):
     # a3b = o3f
     # a3f = o3d
+    # fatigue = o3c 
+    #   1_a/2_a = I felt tired
+    #   1_b/2_b = I was easily tired
+    #   1_d/2_d = I felt physicallt exhausted
     list_3b = [col for col in mini_df.columns if f'minia3b' in col]
     list_3f = [col for col in mini_df.columns if f'minia3f' in col]
     for value in list_3b + list_3f:
