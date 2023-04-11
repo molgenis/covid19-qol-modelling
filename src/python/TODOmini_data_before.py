@@ -108,7 +108,7 @@ def mini_before_covid(path_myfolder):
     aux_all = pd.DataFrame(columns=['project_pseudo_id'])
     name_date_col = ''
     # Loop over different OR (1a, 2a, 3a)
-    for num_quest in ['1a', '2a', '3a']:
+    for num_quest in ['2a']: #['1a', '2a', '3a']
         print('***************************')
         # Make lists and sets
         set_type_mini = set()
@@ -120,26 +120,31 @@ def mini_before_covid(path_myfolder):
         # Read dataframe
         df = pd.read_csv(f"{path_myfolder}QOL_old/df/{num_quest}_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
         print(list(df.columns))
-    #     # Create nan values from the following values in the list 
-    #     none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
-    #     df[df.isin(none_value)] = np.nan
-    #     # Loop over columns of df
-    #     for col in df.columns:
-    #         # Check if 'mini' is in column
-    #         if 'mini' in col:
-    #             type_mini = col.split('_')[2]
-    #             sort_mini = col.split('_')[1]
-    #             set_type_mini.add(type_mini)
-    #             if type_mini == 'a' and sort_mini =='mini':
-    #                 depressive.append(col)
-    #             elif type_mini == 'o'and sort_mini =='mini':
-    #                 anxiety.append(col)
-    #         # Check date for later filtering
-    #         if 'date' in col:
-    #             name_date_col = col
-    #             df[name_date_col] = pd.to_datetime(df[name_date_col], errors='coerce')
-    #     # Call calculate_depressive_before
-    #     df_dep = calculate_depressive_before(df, depressive, num_quest)
+        # Create nan values from the following values in the list 
+        none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
+        df[df.isin(none_value)] = np.nan
+        # Loop over columns of df
+        for col in df.columns:
+            # Check if 'mini' is in column
+            if 'mini' in col:
+                # Check if the mini question belongs to A (depressive) or O (anxiety)
+                type_mini = col.split('_')[2]
+                sort_mini = col.split('_')[1]
+                set_type_mini.add(type_mini)
+                if type_mini == 'a' and sort_mini =='mini':
+                    depressive.append(col)
+                elif type_mini == 'o'and sort_mini =='mini':
+                    anxiety.append(col)
+            # Check date for later filtering
+            if 'date' in col:
+                name_date_col = col
+                df[name_date_col] = pd.to_datetime(df[name_date_col], errors='coerce')
+
+        print(depressive)
+        print('-----')
+        print(anxiety)
+        # # Call calculate_depressive_before
+        # df_dep = calculate_depressive_before(df, depressive, num_quest)
     #     # Call calculate_anxiety_before
     #     df_anx = calculate_anxiety_before(df, anxiety, num_quest)
     #     # Only filter 3a by date as it may contain answers from during the pandemic as well
