@@ -72,10 +72,10 @@ def main():
 
     print('BEFORE')
     before_mini_df = mini_before_covid(my_folder, mini_path)
+    print('BETWEEN')
     mini_df = make_mini_df_between(path_results, mini_path)
     mini_df, set_participants, df_dep, df_anx = mini_between_covid(mini_path, mini_df)
-
-    print('BETWEEN')
+    
     # Filter dataframe on covid participants
     # set_participants: set with participants who also completed the COVID questionnaires (and hereby mini questions):
     #                     mini_df = pd.read_csv(f"{mini_path}between_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')

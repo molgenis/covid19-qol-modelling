@@ -164,10 +164,6 @@ def mini_before_covid(path_myfolder, mini_path):
                         encoding='utf-8', compression='gzip', index=False)
         # Merge all the dep_anx with mini
         mini = pd.merge(mini, df_dep_anx, on=['project_pseudo_id'], how='outer')
-    # Set index
-    mini = mini.set_index('project_pseudo_id')
-    aux_all = aux_all.set_index('project_pseudo_id')
-    dep_all = dep_all.set_index('project_pseudo_id')
 
     mini.to_csv(f"{mini_path}ALL_filter_mini_dep_aux.tsv.gz", sep='\t',
                         encoding='utf-8', compression='gzip', index=False) 
