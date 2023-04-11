@@ -32,6 +32,7 @@ def sum_same_quest(mini_df, list_cat, list_fatique):
     
     Selects everyone who has answered yes to the mini question 50% or more times
     """
+    print('HOI')
     list_cat = sorted(list_cat)
     for num in list_cat:
         print(num)
