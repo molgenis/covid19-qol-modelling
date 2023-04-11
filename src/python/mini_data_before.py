@@ -173,7 +173,7 @@ def mini_before_covid(path_myfolder, mini_path):
                         encoding='utf-8', compression='gzip', index=False)
     # Filter on the columns with before
     # Then you have the columns with sum of questions from before the corona
-    before_mini = [col for col in mini.columns if 'before' in col]
+    before_mini = ['project_pseudo_id'] + [col for col in mini.columns if 'before' in col]
     mini[before_mini].to_csv(f"{mini_path}before_mini.tsv.gz", sep='\t',
                         encoding='utf-8', compression='gzip', index=False) 
     return mini[before_mini]
