@@ -16,7 +16,15 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 
-
+def above_value(mini_df, cols, num):
+    # Select how often 1 occurs
+    mini_df[f'between_mini_{num}_1'] = mini_df[cols].sum(axis=1)
+    # Select how often 0 occurs
+    mini_df[f'between_mini_{num}_0'] = (mini_df[cols] == 0).sum(axis=1)
+    # Calculate how often 1 is entered in percentages
+    mini_df[f'between_mini_{num}_percent_1']  = mini_df[f'between_mini_{num}_1'] / (mini_df[f'between_mini_{num}_1'] + mini_df[f'between_mini_{num}_0']) * 100
+    # Filter on people who have filled in 50% on more 1
+    mini_df[f'between_above_mini_{num}'] = np.where(mini_df[f'between_mini_{num}_percent_1'] >= 50, 1, 0)
 
 
 def sum_same_quest(mini_df, list_cat):
@@ -30,16 +38,21 @@ def sum_same_quest(mini_df, list_cat):
         if 'fatigue' not in num:
             mini_col = [col for col in mini_df.columns if f'mini{num}' in col]
             mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
-            # Select how often 1 occurs
-            mini_df[f'between_mini_{num}_1'] = mini_df[mini_col].sum(axis=1)
-            # Select how often 0 occurs
-            mini_df[f'between_mini_{num}_0'] = (mini_df[mini_col] == 0).sum(axis=1)
-            # Calculate how often 1 is entered in percentages
-            mini_df[f'between_mini_{num}_percent_1']  = mini_df[f'between_mini_{num}_1'] / (mini_df[f'between_mini_{num}_1'] + mini_df[f'between_mini_{num}_0']) * 100
-            # Filter on people who have filled in 50% on more 1
-            mini_df[f'between_above_mini_{num}'] = np.where(mini_df[f'between_mini_{num}_percent_1'] >= 50, 1, 0)
+            above_value(mini_df, mini_col, num)
         else:
-            frag_col = [col for col in mini_df.columns if num in col]
+            frag_a = [col for col in mini_df.columns if col.endswith('a') in col]
+            frag_b = [col for col in mini_df.columns if col.endswith('b') in col]
+            frag_d = [col for col in mini_df.columns if col.endswith('d') in col]
+            print(frag_a)
+            print(frag_b)
+            print(frag_d)
+            print()
+            xxx = mini_df[mini_df[frag_a[0]].notnull()]
+            print(set(xxx[frag_a[0]]))
+            # above_value(mini_df, frag_a, f'o3c_a')
+            # above_value(mini_df, frag_b, f'o3c_a')
+            # above_value(mini_df, frag_d, f'o3c_a')
+
     mini_col_above = ['project_pseudo_id'] + [col for col in mini_df.columns if f'between_above_mini_' in col]
     mini_above = mini_df[mini_col_above]
     return mini_above
@@ -61,6 +74,8 @@ def calculate_depressive_between(mini_df, depressive):
     return mini_above[sum_col]
 
 def calculate_anxiety_between(mini_df, anxiety):
+    # a3b = o3f
+    # a3f = o3d
     list_3b = [col for col in mini_df.columns if f'minia3b' in col]
     list_3f = [col for col in mini_df.columns if f'minia3f' in col]
     for value in list_3b + list_3f:
@@ -72,7 +87,7 @@ def calculate_anxiety_between(mini_df, anxiety):
     print(list_3b)
     print()
     print(list_3b)
-    # mini_above = sum_same_quest(mini_df, anxiety)
+    mini_above = sum_same_quest(mini_df, anxiety)
     # # print(mini_above)
     # # print(mini_above.columns)
     # list_1_ab = [col for col in mini_above.columns if f'_mini_o1' in col]
