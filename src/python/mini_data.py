@@ -73,27 +73,24 @@ def main():
     print('BEFORE')
     before_mini_df = mini_before_covid(my_folder, mini_path)
     print('BETWEEN')
-    # mini_df = make_mini_df_between(path_results, mini_path)
+    mini_df = make_mini_df_between(path_results, mini_path)
     mini_df, set_participants, df_dep, df_anx = mini_between_covid(mini_path, mini_df)
-
-    print(before_mini_df)
-    print(list(before_mini_df.columns))
     
     # Filter dataframe on covid participants
     # set_participants: set with participants who also completed the COVID questionnaires (and hereby mini questions):
     #                     mini_df = pd.read_csv(f"{mini_path}between_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
     #                     set_participants = set(mini_df['project_pseudo_id'])
     before_mini_df = before_mini_df[before_mini_df['project_pseudo_id'].isin(set_participants)]
-    # before_mini_df = select_label_depressive(before_mini_df)
-    # before_mini_df = select_label_anxiety(before_mini_df)
+    before_mini_df = select_label_depressive(before_mini_df)
+    before_mini_df = select_label_anxiety(before_mini_df)
 
-    # # Merge files
-    # merge_before_between = pd.merge(before_mini_df, df_dep, on=['project_pseudo_id'], how='outer')
-    # merge_before_between = pd.merge(merge_before_between, df_anx, on=['project_pseudo_id'], how='outer')
-    # merge_before_between['major_depressive_episode'] = merge_before_between['major_depressive_episode'].fillna(0)
-    # merge_before_between['generalized_anxiety_disorder'] = merge_before_between['generalized_anxiety_disorder'].fillna(0)
-    # merge_before_between.to_csv(f"{mini_path}between_before_mini.tsv.gz", sep='\t',
-    #                     encoding='utf-8', compression='gzip', index=False)    
+    # Merge files
+    merge_before_between = pd.merge(before_mini_df, df_dep, on=['project_pseudo_id'], how='outer')
+    merge_before_between = pd.merge(merge_before_between, df_anx, on=['project_pseudo_id'], how='outer')
+    merge_before_between['major_depressive_episode'] = merge_before_between['major_depressive_episode'].fillna(0)
+    merge_before_between['generalized_anxiety_disorder'] = merge_before_between['generalized_anxiety_disorder'].fillna(0)
+    merge_before_between.to_csv(f"{mini_path}between_before_mini.tsv.gz", sep='\t',
+                        encoding='utf-8', compression='gzip', index=False)    
     print('DONE')
 
 
