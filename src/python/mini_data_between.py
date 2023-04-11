@@ -67,7 +67,7 @@ def calculate_anxiety_between(mini_df, anxiety):
         value = value.split('_')[1].replace('mini', '') #re.sub(r"covt.*_m", "m", value)
         anxiety.add(value) #covt\d*_=
     print()
-    print(anxiety)
+    print(sorted(list(anxiety)))
     print()
     print(list_3b)
     print()
@@ -184,7 +184,7 @@ def main():
     mini_df = pd.DataFrame()
     
     # Call mini_covid
-    mini_df = make_mini_df_between(path_results, mini_path)
+    # mini_df = make_mini_df_between(path_results, mini_path)
     mini_between_covid(mini_path, mini_df)
     # Call select_label
     
