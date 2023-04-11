@@ -27,7 +27,7 @@ def above_value(mini_df, cols, num):
     mini_df[f'between_above_mini_{num}'] = np.where(mini_df[f'between_mini_{num}_percent_1'] >= 50, 1, 0)
 
 
-def sum_same_quest(mini_df, list_cat):
+def sum_same_quest(mini_df, list_cat, list_fatique):
     """
     
     Selects everyone who has answered yes to the mini question 50% or more times
@@ -39,19 +39,30 @@ def sum_same_quest(mini_df, list_cat):
             mini_col = [col for col in mini_df.columns if f'mini{num}' in col]
             mini_df[mini_col] = mini_df[mini_col].astype(str).replace('2', 0).replace('2.0', 0).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)
             above_value(mini_df, mini_col, num)
-        else:
-            frag_a = [col for col in mini_df.columns if col.endswith('a')]
-            frag_b = [col for col in mini_df.columns if col.endswith('b')]
-            frag_d = [col for col in mini_df.columns if col.endswith('d')]
-            print(frag_a)
-            print(frag_b)
-            print(frag_d)
-            print()
-            xxx = mini_df[mini_df[frag_a[0]].notnull()]
-            print(set(xxx[frag_a[0]]))
-            # above_value(mini_df, frag_a, f'o3c_a')
-            # above_value(mini_df, frag_b, f'o3c_a')
-            # above_value(mini_df, frag_d, f'o3c_a')
+
+    
+        
+    #{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0}
+    # 1 = Yes, that is absolutely correct
+    # 7 = No, that is not correct
+
+    if list_fatique != '':
+        for col_fat in list_fatique:
+            mini_df[col_fat] = mini_df[col_fat].astype(str).replace('6', 0).replace('6.0', 0).replace('5', 0).replace('5.0', 0).replace('4', 0).replace('4.0', 0).replace('3', 1).replace('3.0', 1).replace('2', 1).replace('2.0', 1).replace('1', 1).replace('1.0', 1).replace('nan', np.nan)       
+            
+
+        frag_a = [col for col in list_fatique if col.endswith('a')]
+        frag_b = [col for col in list_fatique if col.endswith('b')]
+        frag_d = [col for col in list_fatique if col.endswith('d')]
+        print()
+        print(frag_a)
+        print()
+        print(frag_b)
+        print()
+        print(frag_d)
+        # above_value(mini_df, frag_a, f'o3c_a')
+        # above_value(mini_df, frag_b, f'o3c_a')
+        # above_value(mini_df, frag_d, f'o3c_a')
 
     mini_col_above = ['project_pseudo_id'] + [col for col in mini_df.columns if f'between_above_mini_' in col]
     mini_above = mini_df[mini_col_above]
@@ -60,7 +71,7 @@ def sum_same_quest(mini_df, list_cat):
 
 def calculate_depressive_between(mini_df, depressive):
     print('DEP')
-    mini_above = sum_same_quest(mini_df, depressive)
+    mini_above = sum_same_quest(mini_df, depressive, '')
     # Select on questions
     list_df_3 = [col for col in mini_above.columns if f'mini_a3' in col]
     list_1_2 = list(set(list(mini_above.columns)) - set(list_df_3))
@@ -82,6 +93,8 @@ def calculate_anxiety_between(mini_df, anxiety):
     #   1_d/2_d = I felt physicallt exhausted
     list_3b = [col for col in mini_df.columns if f'minia3b' in col]
     list_3f = [col for col in mini_df.columns if f'minia3f' in col]
+    list_fatique = [col for col in mini_df.columns if f'fatigue' in col]
+
     for value in list_3b + list_3f:
         value = value.split('_')[1].replace('mini', '') #re.sub(r"covt.*_m", "m", value)
         anxiety.add(value) #covt\d*_=
@@ -91,7 +104,7 @@ def calculate_anxiety_between(mini_df, anxiety):
     print(list_3b)
     print()
     print(list_3b)
-    mini_above = sum_same_quest(mini_df, anxiety)
+    mini_above = sum_same_quest(mini_df, anxiety, list_fatique)
     # # print(mini_above)
     # # print(mini_above.columns)
     # list_1_ab = [col for col in mini_above.columns if f'_mini_o1' in col]
@@ -184,8 +197,8 @@ def mini_between_covid(mini_path, mini_df):
             anxiety.append(col)
             anxiety_set.add(fatigue)
 
-    # mini_df = mini_df.set_index('project_pseudo_id')
-    df_dep = calculate_depressive_between(mini_df, list(depressive_set))
+    # # mini_df = mini_df.set_index('project_pseudo_id')
+    # df_dep = calculate_depressive_between(mini_df, list(depressive_set))
     df_anx = calculate_anxiety_between(mini_df, anxiety_set)
     # # calculate_anxiety_before(mini_df, anxiety, num_quest)
     # return mini_df, set_cols, list(set_participants), df_dep, df_anx
