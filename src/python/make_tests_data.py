@@ -32,7 +32,7 @@ def get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_bet
                                 compression='gzip')
     # Merge files
     df_QOL = pd.merge(df_QOL, df, how='left', on=['project_pseudo_id', 'times_part'])
-    print(df_QOL)
+    
     # Read file
     df_BFI = pd.read_csv(f'{BFI_path}BFI_only_with_sum.tsv.gz',
                              sep='\t', encoding='utf-8', compression='gzip')
