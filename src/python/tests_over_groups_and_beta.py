@@ -24,7 +24,6 @@ def age(df_QOL, variable):
     """
     column_group = 'mean_age'
     df_QOL_select = select_columns(df_QOL, variable, column_group)
-    print(df_QOL_select[['project_pseudo_id', column_group, variable]])
     spearman_test(df_QOL_select, variable, column_group)
 
 
@@ -216,11 +215,11 @@ def main():
     # df_QOL_filter['beta_abs'] = df_QOL_filter['beta'].abs()
     # variable = 'beta_abs'
     age(df_QOL_select, variable)
-    # df_QOL_select = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
-    # df_QOL_select.drop_duplicates(inplace=True)
+    df_QOL_select = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
+    df_QOL_select.drop_duplicates(inplace=True)
     # general_health(df_QOL_select, variable)
     # education(df_QOL_select, variable)
-    # income(df_QOL_select, variable)
+    income(df_QOL_select, variable)
     # BFI(df_QOL_select, variable)
     # resilience(df_QOL_select, variable)
     # gender(df_QOL_select, variable)
