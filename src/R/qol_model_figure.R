@@ -51,17 +51,19 @@ dateLimits <- c(min(predicted_points$date), max(predicted_points$date))
 average_points$participants <- ordered(cut(average_points$size_responsedate, 
                                            breaks = c(0,2000,6000,Inf), 
                                            labels = c("<2000", "2000-6000", ">6000")))
+  
 
 
 
 
 # Make plot
-QOL_plot <- ggplot(predicted_points, aes(x=date, y=y_pred, color='predicted')) + geom_point(size=0.5) +
+QOL_plot <- ggplot(predicted_points, aes(x=date, y=y_pred, colour='predicted')) + geom_point(size=0.5, shape=16) +
   geom_point(data = average_points, alpha = 0.4, shape = 16, 
-             aes(x=date, y=qualityoflife, color='average', size=participants)) +
+             aes(x=date, y=qualityoflife, colour='average', size=participants)) +
   ylab('Quality of life score (1-10)') +
   coord_cartesian(xlim = dateLimits) +
-  scale_color_manual(values = c('predicted'='firebrick', 'average'='grey20')) + 
+  scale_size_manual(values = c(1,2,3)*1) +
+  scale_colour_manual(values = c('predicted'='#D55E00', 'average'='grey20')) + 
   theme(legend.position = c(0.86, 0.3), legend.box = "horizontal",
         legend.title = element_text(size=6), legend.text=element_text(size=6),
         legend.background = element_blank(),
@@ -122,7 +124,7 @@ prow <- plot_grid(
   nrow =1, rel_heights = c(2.10)
 )
 
-plot_to_pdf(prow, paste(save_path, "model_figure.pdf", sep=""), width = 180/25.4, height = 6)
+plot_to_pdf(prow, file.path(save_path, "model_figure.pdf"), width = 180/10/2.54*(5/6), height = 6*(5/6))
 
 # ggsave(sprintf("/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL/out-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
 #          width=160, height=120, units='mm')
