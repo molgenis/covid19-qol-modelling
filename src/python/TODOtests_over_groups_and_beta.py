@@ -39,8 +39,6 @@ def get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_bet
     # Read file
     df_BFI = pd.read_csv(f'{BFI_path}BFI_only_with_sum.tsv.gz',
                              sep='\t', encoding='utf-8', compression='gzip')
-    # Remove 'Unnamed: 0'
-    df_BFI = df_BFI.iloc[:, 1:]
     sum_cols = [col for col in df_BFI.columns if 'sum' in col]
     df_QOL = pd.merge(df_QOL, df_BFI[['project_pseudo_id'] + sum_cols], on=['project_pseudo_id'], how='left')
     # Read file
@@ -53,7 +51,7 @@ def get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_bet
     df_QOL = pd.merge(df_QOL, covariance_df[['project_pseudo_id', 'beta']], on=['project_pseudo_id'], how='left')
     # Save file
     df_QOL.to_csv(f'{tests_over_groups_and_beta_path}merge_no_mini_last.tsv.gz', sep='\t', encoding='utf-8',
-                        compression='gzip')
+                        compression='gzip', index=False)
     
     return df_QOL 
 
