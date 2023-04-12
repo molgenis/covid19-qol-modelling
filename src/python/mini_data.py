@@ -12,7 +12,6 @@ from config import get_config
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 from collections import Counter
-import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 from mini_data_before import mini_before_covid

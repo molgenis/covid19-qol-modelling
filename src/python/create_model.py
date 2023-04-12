@@ -11,21 +11,14 @@ from config import get_config
 import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
-import seaborn as sns
 import warnings
-from collections import Counter
-from scipy.signal import savgol_filter
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.ensemble import RandomForestRegressor
-import statsmodels.formula.api as smf
-import datetime as dt
-import scipy.stats as stats
-from scipy import stats
-import matplotlib.dates as mdates
+
 warnings.filterwarnings('ignore')
 from make_dataframe_for_correlation import add_weather_QOL, add_hospitalization, add_stringency_index, sunrise_sunset, add_other_cat
 from correlation_for_table2 import calculate_cor

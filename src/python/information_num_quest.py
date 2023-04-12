@@ -10,9 +10,7 @@ sys.path.append(
 from config import get_config
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-import seaborn as sns
 import warnings
-from collections import Counter
 warnings.filterwarnings('ignore')
 
 

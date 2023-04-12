@@ -7,9 +7,8 @@ import os
 import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
-import collections
-from collections import Counter
-import math
+import warnings
+warnings.filterwarnings('ignore')
 
 import sys
 sys.path.append(
