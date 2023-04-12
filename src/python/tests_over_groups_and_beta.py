@@ -201,8 +201,8 @@ def main():
 
     variable = 'beta'
 
-    # df_QOL = get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_beta_path, create_file_with_groups_path, question_15_or_more_path, BFI_path)
-    # df_QOL_select = merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, mini_path, head_top_null_path)   
+    df_QOL = get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_beta_path, create_file_with_groups_path, question_15_or_more_path, BFI_path)
+    df_QOL_select = merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, mini_path, head_top_null_path)   
 
     if df_QOL_select.empty:
         df_QOL_select = pd.read_csv(f'{tests_over_groups_and_beta_path}QOL_selected_columns_withbetatypes.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip') 
