@@ -420,7 +420,7 @@ main <- function(argv=NULL) {
     align = 'hv', ncol=2,
     rel_heights = c(3, 3, 3, 3), rel_widths = c(3,3))
   
-  plot_to_pdf(compiled_plot, sprintf("out-compiled-%s.pdf", format(Sys.Date(), "%Y%m%d")), width = 180/10/2.54, height = 180)
+  plot_to_pdf(compiled_plot, sprintf("out-compiled-%s.pdf", format(Sys.Date(), "%Y%m%d")), width = 180/10/2.54, height = 180/10/2.54)
     
 }
 
