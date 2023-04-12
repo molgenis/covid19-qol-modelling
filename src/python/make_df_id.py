@@ -14,14 +14,16 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+
 plt.switch_backend('agg')
 import warnings
+
 warnings.filterwarnings('ignore')
 import sys
+
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
 from config import get_config
-
 
 
 def concat_questionnaires_filter(path_directory, directory):
@@ -82,7 +84,6 @@ def calculate_mean_QOL(all_quest, path_save):
     return df_id, df_q
 
 
-
 def main():
     # Call get_config
     config = get_config()
@@ -98,4 +99,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

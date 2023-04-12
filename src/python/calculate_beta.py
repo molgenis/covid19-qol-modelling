@@ -13,13 +13,17 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+
 plt.switch_backend('agg')
 import warnings
+
 warnings.filterwarnings('ignore')
 import sys
+
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
 from config import get_config
+
 
 def calculate_covariance_QOL(calculate_beta_path, make_df_id):
     """
@@ -28,16 +32,16 @@ def calculate_covariance_QOL(calculate_beta_path, make_df_id):
     df_q : dataframe with responsdate and mean quality of life
     """
     # Read file: df_id
-    df_id = pd.read_csv(f'{make_df_id}df_id.tsv.gz', sep='\t', encoding='utf-8', compression='gzip').iloc[: , 1:]
+    df_id = pd.read_csv(f'{make_df_id}df_id.tsv.gz', sep='\t', encoding='utf-8', compression='gzip').iloc[:, 1:]
     df_id['responsedate'] = pd.to_datetime(df_id['responsedate'])
     df_id = df_id.astype({'qualityoflife': 'int64'})
     # Read file: df_q
-    df_q = pd.read_csv(f'{make_df_id}df_q.tsv.gz', sep='\t', encoding='utf-8', compression='gzip').iloc[: , 1:]
+    df_q = pd.read_csv(f'{make_df_id}df_q.tsv.gz', sep='\t', encoding='utf-8', compression='gzip').iloc[:, 1:]
     # Rename column
     df_q.rename(columns={'qualityoflife': 'qualityoflife_mean'}, inplace=True)
     df_q = df_q.astype({'qualityoflife_mean': 'float64'})
     df_q['responsedate'] = pd.to_datetime(df_q['responsedate'])
-       
+
     # Concat dataframes
     df_QOL = pd.merge(df_q, df_id, on=['responsedate'])
     # Calculate the x-mean (mean per person QOL)
@@ -74,13 +78,14 @@ def calculate_covariance_QOL(calculate_beta_path, make_df_id):
 
 def calculate_cor_and_beta(calculate_beta_path, df_QOL, covariance_df):
     """
-    
+
     """
     # Read files
     if df_QOL.empty:
         df_QOL = pd.read_csv(f'{calculate_beta_path}df_QOL.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
     if covariance_df.empty:
-        covariance_df = pd.read_csv(f'{calculate_beta_path}QOL_covariance.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
+        covariance_df = pd.read_csv(f'{calculate_beta_path}QOL_covariance.tsv.gz', sep='\t', encoding='utf-8',
+                                    compression='gzip')
     # Fill NaN with 0. This is because when the numerator is 0 the covariance is also 0.
     covariance_df['covariance_value'] = covariance_df['covariance_value'].fillna(0)
     # Select only the people with more then 15 questionnaires
@@ -115,7 +120,7 @@ def calculate_cor_and_beta(calculate_beta_path, df_QOL, covariance_df):
     calculate_x_y = pd.merge(calculate_x[['project_pseudo_id', 'sd_x', 'x_diff_2', 'variance_x']],
                              calculate_y[['project_pseudo_id', 'sd_y', 'y_diff_2', 'variance_y']],
                              on=['project_pseudo_id'], how='outer')
-    
+
     # Merge dataframes
     merge_sd_cov = pd.merge(covariance_df, calculate_x_y, on=['project_pseudo_id'], how='outer')
     # Filter on non Nan values
@@ -124,14 +129,14 @@ def calculate_cor_and_beta(calculate_beta_path, df_QOL, covariance_df):
     # Example: cov(x,y) / (sd(x) * sd(y))
     merge_sd_cov['correlation'] = merge_sd_cov['covariance_value'] / (merge_sd_cov['sd_x'] * merge_sd_cov['sd_y'])
     # Save dataframe
-    merge_sd_cov.to_csv(f'{calculate_beta_path}QOL_covariance_correlation.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
+    merge_sd_cov.to_csv(f'{calculate_beta_path}QOL_covariance_correlation.tsv.gz', sep='\t', encoding='utf-8',
+                        compression='gzip')
     # Calculate beta
     # Example: sum((x - x_head)*(y - y_head)) / sum((y - y_head)^2)
     merge_sd_cov['beta'] = merge_sd_cov['x_diff_TIMES_y_diff'] / merge_sd_cov['y_diff_2']
     # Save dataframe
     merge_sd_cov.to_csv(f'{calculate_beta_path}QOL_covariance_correlation_beta.tsv.gz', sep='\t', encoding='utf-8',
                         compression='gzip')
-
 
 
 def main():
@@ -152,4 +157,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
