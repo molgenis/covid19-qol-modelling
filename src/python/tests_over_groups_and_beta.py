@@ -24,7 +24,8 @@ def age(df_QOL, variable):
     """
     column_group = 'mean_age'
     df_QOL_select = select_columns(df_QOL, variable, column_group)
-    spearman_test(df_QOL_select, variable, column_group)
+    print(set(df_QOL_select[column_group]))
+    # spearman_test(df_QOL_select, variable, column_group)
 
 
 def gender(df_QOL, variable):
@@ -119,8 +120,9 @@ def income(df_QOL, variable):
     df_QOL_select[column_group] = df_QOL_select[column_group].map(dict_ans)
     df_QOL_select[column_group].replace(13, np.NaN, inplace=True)
     df_QOL_select = df_QOL_select.dropna().reset_index(drop=True)
+    print(set(df_QOL_select[column_group]))
     
-    spearman_test(df_QOL_select, variable, column_group)
+    # spearman_test(df_QOL_select, variable, column_group)
     
 
 def mini_dep(df_QOL, variable):
@@ -209,16 +211,16 @@ def main():
     age(df_QOL_select, variable)
     df_QOL_select = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
     df_QOL_select.drop_duplicates(inplace=True)
-    general_health(df_QOL_select, variable)
-    education(df_QOL_select, variable)
+    # general_health(df_QOL_select, variable)
+    # education(df_QOL_select, variable)
     income(df_QOL_select, variable)
-    BFI(df_QOL_select, variable)
-    resilience(df_QOL_select, variable)
-    gender(df_QOL_select, variable)
-    household(df_QOL_select, variable)
-    media(df_QOL_select, variable)    
-    mini_dep(df_QOL_select, variable)
-    mini_anx(df_QOL_select, variable)
+    # BFI(df_QOL_select, variable)
+    # resilience(df_QOL_select, variable)
+    # gender(df_QOL_select, variable)
+    # household(df_QOL_select, variable)
+    # media(df_QOL_select, variable)    
+    # mini_dep(df_QOL_select, variable)
+    # mini_anx(df_QOL_select, variable)
     
     
     
