@@ -25,7 +25,7 @@ def age(df_QOL, variable):
     column_group = 'mean_age'
     df_QOL_select = select_columns(df_QOL, variable, column_group)
     print(set(df_QOL_select[column_group]))
-    # spearman_test(df_QOL_select, variable, column_group)
+    spearman_test(df_QOL_select, variable, column_group)
 
 
 def gender(df_QOL, variable):
