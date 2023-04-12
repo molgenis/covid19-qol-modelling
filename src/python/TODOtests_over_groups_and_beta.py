@@ -33,9 +33,6 @@ def get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_bet
     # Merge files
     df_QOL = pd.merge(df_QOL, df, how='left', on=['project_pseudo_id', 'times_part'])
     print(df_QOL)
-    # # Save file
-    # df_QOL = pd.read_csv(f'{path_read_QOL}with_beta_without_respons.tsv.gz',
-    #                          sep='\t', encoding='utf-8', compression='gzip')
     # Read file
     df_BFI = pd.read_csv(f'{BFI_path}BFI_only_with_sum.tsv.gz',
                              sep='\t', encoding='utf-8', compression='gzip')
@@ -55,8 +52,47 @@ def get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_bet
     
     return df_QOL 
 
-
+def merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, mini_path, head_top_null_path):
+    # Read files
+    if df_QOL.empty:
+        df_QOL = pd.read_csv(f'{tests_over_groups_and_beta_path}merge_no_mini_last.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip') 
+    veerkracht = pd.read_csv(f"{resilience_path}df/resilience.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
+    mini = pd.read_csv(f"{mini_path}df/between_before_mini.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
+    # Merge files
+    df_QOL = pd.merge(df_QOL, veerkracht, on=['project_pseudo_id'], how='outer')
+    df_QOL = pd.merge(df_QOL, mini, on=['project_pseudo_id'], how='outer')
+    # Not nan
+    df_QOL = df_QOL[df_QOL['age'].notna()]
+    df_QOL = df_QOL[df_QOL['gender'].notna()]
+    # fill columns
+    df_QOL['major_depressive_episode'] = df_QOL['major_depressive_episode'].fillna(0)
+    df_QOL['generalized_anxiety_disorder'] = df_QOL['generalized_anxiety_disorder'].fillna(0)
+    # Calculate the average age of the participants
+    age_mean = df_QOL.groupby('project_pseudo_id')['age'].mean().reset_index()
+    age_mean = age_mean.rename(columns={age_mean.columns[1]: 'mean_age'})
+    df_QOL = pd.merge(df_QOL, age_mean, on=['project_pseudo_id'], how="left")
     
+    df_beta_type = pd.read_csv(f'{head_top_null_path}head_tail_null_10_beta_abs.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip')
+    df_QOL = pd.merge(df_QOL, df_beta_type[['project_pseudo_id', 'beta_type']], how='left', on=['project_pseudo_id'])
+    # Select columns
+    df_QOL_select = df_QOL[['project_pseudo_id', 'responsedate', 'qualityoflife',
+                    'gender', 'age', 'mean_age', 'household_status', 'general_health',
+                    'income', 'mediacategory_media', 'mediacategory_health_authorities',
+                    'mediacategory_social_media', 'mediacategory_family_and_friends',
+                    'mediacategory_other', 'education', 'n_sum', 'e_sum', 'o_sum', 'a_sum',
+                    'c_sum', 'times_part', 'beta', 'resilience_mean', 'resilience_median',
+                    'major_depressive_episode', 'generalized_anxiety_disorder', 'num_quest',
+                    'beta_type']]
+    # Save files
+    df_QOL_select.to_csv(f'{tests_over_groups_and_beta_path}QOL_selected_columns_withbetatypes.tsv.gz', sep='\t', encoding='utf-8',
+                        compression='gzip', index=False)
+    # Filter file
+    df_QOL_select_filter = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
+    df_QOL_select_filter.drop_duplicates(inplace=True)
+    df_QOL_select_filter.to_csv(f'{tests_over_groups_and_beta_path}QOL_selected_columns_withbetatypes_noageresponsequalnumquest.tsv.gz', sep='\t', encoding='utf-8',
+                        compression='gzip', index=False)
+    return df_QOL_select
+
 
 
 def main():
@@ -67,46 +103,18 @@ def main():
     BFI_path = config['BFI']
     create_file_with_groups_path = config['create_file_with_groups']
     calculate_beta_path = config['calculate_beta']
+    resilience_path = config['resilience']
+    mini_path = config['MINI']
     path_read_QOL = config['path_read_QOL']
+    head_top_null_path = config['head_top_null']
+
+    df_QOL = pd.DataFrame()
     
     variable = 'beta'
     df_QOL = get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_beta_path, create_file_with_groups_path, question_15_or_more_path, BFI_path)
+    df_QOL_select = merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, mini_path, head_top_null_path)
     
-    # df_QOL = pd.read_csv(f'{path_read_QOL}merge_no_mini_last.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip') #merge_no_mini_filter merge_no_mini_NOfilter merge_no_mini_last
-    # veerkracht = pd.read_csv(f"{path_read_QOL}df/veerkracht.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
-    # mini = pd.read_csv(f"{path_read_QOL}df/between_before_mini.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
-    # df_QOL = pd.merge(df_QOL, veerkracht, on=['project_pseudo_id'], how='outer')
-    # df_QOL = pd.merge(df_QOL, mini, on=['project_pseudo_id'], how='outer')
-    # df_QOL = df_QOL[df_QOL['age'].notna()]
-    # df_QOL = df_QOL[df_QOL['gender'].notna()]
-    # df_QOL['major_depressive_episode'] = df_QOL['major_depressive_episode'].fillna(0)
-    # df_QOL['generalized_anxiety_disorder'] = df_QOL['generalized_anxiety_disorder'].fillna(0)
 
-    # age_mean = df_QOL.groupby('project_pseudo_id')['age'].mean().reset_index()
-    # age_mean = age_mean.rename(columns={age_mean.columns[1]: 'mean_age'})
-    # print(age_mean)
-    # df_QOL = pd.merge(df_QOL, age_mean, on=['project_pseudo_id'], how="left")
-    
-   
-    # df_beta_type = pd.read_csv(f'{path_read_QOL}head_tail_null_10_beta_abs.tsv' , sep='\t', encoding='utf-8')
-    # df_QOL = pd.merge(df_QOL, df_beta_type[['project_pseudo_id', 'beta_type']], how='left', on=['project_pseudo_id'])
-
-    # df_QOL_select = df_QOL[['project_pseudo_id', 'responsedate', 'qualityoflife',
-    #                 'gender', 'age', 'mean_age', 'household_status', 'general_health',
-    #                 'income', 'mediacategory_media', 'mediacategory_health_authorities',
-    #                 'mediacategory_social_media', 'mediacategory_family_and_friends',
-    #                 'mediacategory_other', 'education', 'n_sum', 'e_sum', 'o_sum', 'a_sum',
-    #                 'c_sum', 'times_part', 'beta', 'resilience_mean', 'resilience_median',
-    #                 'major_depressive_episode', 'generalized_anxiety_disorder', 'num_quest',
-    #                 'beta_type']]
-    
-    # df_QOL_select.to_csv(f'{tests_over_groups_and_beta_path}QOL_selected_columns_withbetatypes.tsv.gz', sep='\t', encoding='utf-8',
-    #                     compression='gzip', index=False)
-    
-    # df_QOL_select2 = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
-    # df_QOL_select2.drop_duplicates(inplace=True)
-    # df_QOL_select2.to_csv(f'{tests_over_groups_and_beta_path}QOL_selected_columns_withbetatypes_noageresponsequalnumquest.tsv.gz', sep='\t', encoding='utf-8',
-    #                     compression='gzip', index=False)
 
     
     
