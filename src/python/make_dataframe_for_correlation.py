@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
+
 # Imports
 import pandas as pd
 import numpy as np
 import sys
-
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
 from config import get_config
 import matplotlib.pyplot as plt
-
 plt.switch_backend('agg')
 import warnings
 warnings.filterwarnings('ignore')

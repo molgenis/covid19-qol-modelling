@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -18,14 +26,15 @@ def get_data(path_directory, question_15_or_more_path):
     """
     Check whether participants have completed 15 or more questionnaires
     """
+    # Create empty dataframe with column names
     df_quest = pd.DataFrame(columns=['project_pseudo_id', 'responsedate', 'gender', 'age', 'qualityoflife', 'num_quest'])
+    # Loop over files in path_directory
     for files in os.listdir(path_directory):
         if files.startswith('covq'):
             filenum = files.split('_')[2]
             filenum = str(filenum.replace('t', ''))
             # QOL question does not appear in the first questionnaire
             if filenum != '01':
-                print(filenum)
                 df = pd.read_csv(f'{path_directory}{files}', sep=',', encoding='utf-8')
                 for col in df.columns:
                     if '_qualityoflife_' in col:
@@ -37,7 +46,7 @@ def get_data(path_directory, question_15_or_more_path):
                 df[df.isin(none_value)] = np.nan
                 df['num_quest'] = filenum                
                 df_quest = pd.merge(df_quest, df, how='outer', on=['project_pseudo_id', 'responsedate', 'gender', 'age', 'qualityoflife', 'num_quest'])
-    
+    # Save file
     df_quest.to_csv(f'{question_15_or_more_path}num_quest_1.tsv.gz', sep='\t', encoding='utf-8',
                         compression='gzip', index=False)
     # Groupby project_pseudo_id
@@ -58,7 +67,7 @@ def main():
     path_directory = config['path_questionnaire_results']
     question_15_or_more_path = config['question_15_or_more']
     get_data(path_directory, question_15_or_more_path)
-    print('DONE')
+    print('DONE: question_15_or_more.py')
 
 
 if __name__ == '__main__':

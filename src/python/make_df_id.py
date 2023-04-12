@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
+
 # Imports
 import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-
 plt.switch_backend('agg')
 import warnings
 warnings.filterwarnings('ignore')
-
 import sys
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
@@ -27,9 +34,8 @@ def concat_questionnaires_filter(path_directory, directory):
     # Concat dataframes to one dataframe (all_quest)
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
-        print(filename)
         # Only grab the files that start with 'covq_q_t' and end with '.csv'
-        if filename.startswith("covq_q_t") and filename.endswith(".csv"):
+        if filename.startswith("covq") and filename.endswith(".csv"):
             # Get the number of the questionnaire (this is still a string)
             number_quest = filename.split('_')[2].replace('t', '')
             # No quality of life question in questionnaire 01
@@ -65,10 +71,6 @@ def calculate_mean_QOL(all_quest, path_save):
     Calculate the mean per date. (=df_q)
     Calculate the mean per date per person (=df_id)
     """
-    # # Check duplicates
-    # respons_id = all_quest.groupby(['responsedate', 'project_pseudo_id']).size().reset_index() # or count() (size())
-    # check_duplicates = respons_id[respons_id['qualityoflife']> 1]
-
     # Calculate mean quality of life per date per date per person
     df_id = all_quest.groupby(['responsedate', 'project_pseudo_id']).mean().reset_index()
     # Save file
@@ -91,7 +93,7 @@ def main():
     # Call different functions
     all_quest = concat_questionnaires_filter(path_directory, directory)
     df_id, df_q = calculate_mean_QOL(all_quest, path_save)
-    print('DONE')
+    print('DONE: make_df_id.py')
 
 
 if __name__ == '__main__':

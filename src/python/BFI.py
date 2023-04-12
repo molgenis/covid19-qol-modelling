@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -10,7 +18,6 @@ sys.path.append(
 from config import get_config
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -20,11 +27,9 @@ def get_questions(LL_variables):
     
     """
     df = pd.read_csv(f"{LL_variables}covq_q_t29_variables.csv")
-    #print(df)
     BFI_list = list()
     for index, row in df.iterrows():
         if 'zie mezelf ' in row['definition_nl']:
-            #print(f"{row['variable_name']}-{row['definition_nl']}")
             BFI_list.append(row['variable_name'])
             
     return BFI_list
@@ -34,10 +39,8 @@ def check_answers(LL_enumerations, BFI_list):
     
     """
     df = pd.read_csv(f"{LL_enumerations}covq_q_t29_enumerations.csv")
-    #print(df)
     for id_BFI in BFI_list:
         df_select = df[df['variable_name'].str.contains(id_BFI)]
-        #print(df_select)
 
 
 def get_results(LL_results, BFI_list, BFI_path):
@@ -47,9 +50,7 @@ def get_results(LL_results, BFI_list, BFI_path):
     column_names = ['project_pseudo_id', 'age', 'gender']
     df = pd.read_csv(f"{LL_results}covq_q_t29_results.csv")
     column_names.extend(BFI_list)
-    #print(column_names)
     df_BFI = df[column_names]
-    #print(df_BFI)
     df_BFI.to_csv(f'{BFI_path}BFI.tsv.gz', sep='\t', encoding='utf-8',
                   compression='gzip', index=False)
     return df_BFI
@@ -69,7 +70,6 @@ def analyse_BFI(df_BFI, BFI_path):
                       'c' : ['covt29_personality_adu_q_1_a', 'covt29_personality_adu_q_1_g', 'covt29_personality_adu_q_1_k']
                     }
     for key, value in category_dict.items():
-        print(key)
         # Select columns
         df_select = df_BFI[value]
         # Make int of columns
@@ -82,22 +82,16 @@ def analyse_BFI(df_BFI, BFI_path):
             # Wanneer er 5 staat wordt het 8-5=3 etc.
             overlap_column = list(set(value) & set(reverse_items))[0]
             df_select[f'reverse_{overlap_column}'] = 8 - df_select[overlap_column]
-            print(df_select[[f'reverse_{overlap_column}', overlap_column]])
+            
             df_select.drop(overlap_column, axis=1, inplace=True)
             df_select.rename(columns={f'reverse_{overlap_column}': overlap_column}, inplace=True)
-        #df_select[f'{key}_sum'] = df_select[value].sum(axis=1)
         # Sum de values bij elkaar op (dit is dus met de aangepaste reverse value)
         df_BFI[f'{key}_sum'] = df_select[value].sum(axis=1)
-        print(df_select[value])
-        print(df_BFI[value + [f'{key}_sum']])
         column_names.append(f'{key}_sum')
-        #print(df_select)
-        #print('---')
-    
-    #print(df_BFI)
+        
     df_BFI.to_csv(f'{BFI_path}BFI_with_sum.tsv.gz', sep='\t', encoding='utf-8',
                   compression='gzip', index=False)
-    #print(df_BFI[column_names])
+
     df_BFI_sum = df_BFI[column_names]
     df_BFI_sum.to_csv(f'{BFI_path}BFI_only_with_sum.tsv.gz', sep='\t', encoding='utf-8',
                       compression='gzip', index=False)
@@ -115,7 +109,7 @@ def main():
     df_BFI = get_results(LL_results, BFI_list, BFI_path)
     df_BFI, df_BFI_sum = analyse_BFI(df_BFI, BFI_path)
 
-    print('DONE')
+    print('DONE: BFI.py')
 
 
 if __name__ == '__main__':

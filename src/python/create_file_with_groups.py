@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 from asyncio import selector_events
 import pandas as pd
@@ -199,7 +207,6 @@ def add_educational_level(create_file_with_groups_path, path_directory, config):
     # Get general health questions
     for file in os.listdir(path_directory):
         if file.startswith('covq'):
-            print(file)
             df = pd.read_csv(f"{path_directory}{file}", sep=',', encoding='utf-8')
             # Replace none_values with np.nan in df
             none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
@@ -262,18 +269,18 @@ def main():
     question_15_or_more_path = config['question_15_or_more']
     data_QOL = config['data_QOL']
     
-    print('merge_questdata_with_other')
+    # print('merge_questdata_with_other')
     merge_questdata_with_other(data_QOL, create_file_with_groups_path, question_15_or_more_path) 
-    print('add_media_data')
+    # print('add_media_data')
     add_media_data(path_directory, create_file_with_groups_path) 
-    print('add_general_health')
+    # print('add_general_health')
     add_general_health(create_file_with_groups_path, path_directory, config)
-    print('add_income')
+    # print('add_income')
     add_income(create_file_with_groups_path, path_directory, config)
-    print('add_educational_level')
+    # print('add_educational_level')
     add_educational_level(create_file_with_groups_path, path_directory, config)
 
-    print('DONE')
+    print('DONE: create_file_with_groups.py')
 
 
 if __name__ == '__main__':

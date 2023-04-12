@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -84,7 +92,7 @@ def main():
     QOL_beta = pd.DataFrame()
     QOL_beta = make_df_beta(question_15_or_more_path, calculate_beta_path, head_top_null_path)
     read_df_beta(head_top_null_path, QOL_beta)
-    print('DONE')
+    print('DONE: head_top_null_beta.py')
 
 
 if __name__ == '__main__':

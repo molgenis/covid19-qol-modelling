@@ -1,5 +1,13 @@
 #!/usr/bin/bash
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 ml Anaconda3/5.3.0
 #source activate covid
 ml Python/3.9.1-GCCcore-7.3.0-bare
@@ -29,7 +37,7 @@ echo "mini_data.py"
 python3 mini_data.py
 echo "create_file_with_groups.py"
 python create_file_with_groups.py
-echo "tests_over_groups_and_beta.py"
-python3 tests_over_groups_and_beta.py
+# echo "tests_over_groups_and_beta.py"
+# python3 tests_over_groups_and_beta.py
 
 echo "ALL DONE"

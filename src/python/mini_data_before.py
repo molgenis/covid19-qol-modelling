@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -107,14 +115,12 @@ def mini_before_covid(path_myfolder, mini_path):
     name_date_col = ''
     # Loop over different OR (1a, 2a, 3a)
     for num_quest in ['1a', '2a', '3a']:
-        print('***************************')
         # Make lists and sets
         set_type_mini = set()
         # Columns with results of depressive
         depressive = list()
         # Columns with results of anxiety
         anxiety = list()
-        print(num_quest)
         # Read dataframe
         df = pd.read_csv(f"{path_myfolder}QOL_old/df/{num_quest}_mini.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
         # Create nan values from the following values in the list 

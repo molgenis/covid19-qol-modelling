@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -24,7 +32,6 @@ def get_data(path_directory, information_num_quest_path):
         if files.startswith('cov'):
             filenum = files.split('_')[2]
             filenum = str(filenum.replace('t', ''))
-            print(filenum)
             df = pd.read_csv(f'{path_directory}{files}', sep=',', encoding='utf-8')
             df = df[['project_pseudo_id', f'covt{filenum}_responsedate_adu_q_1', 'gender', 'age']]
             df.rename(columns={f'covt{filenum}_responsedate_adu_q_1': 'responsedate'}, inplace=True)
@@ -117,7 +124,7 @@ def main():
     df_quest = get_data(path_directory, information_num_quest_path)
     df_quest_only = filter_data(df_quest, information_num_quest_path)
     open_file(information_num_quest_path, df_quest_only)
-    print('DONE')
+    print('DONE: information_num_quest.py')
 
 
 if __name__ == '__main__':

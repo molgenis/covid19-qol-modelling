@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -120,7 +128,6 @@ def make_mini_df_between(path_results, mini_path):
         # If file starts with 'cov'
         if files.startswith('covq'):
             filenum = files.split('_')[2]
-            print(filenum)
             # Read dataframe
             df = pd.read_csv(f'{path_results}{files}', sep=',', encoding='utf-8')
             # Create nan values from the following values in the list 

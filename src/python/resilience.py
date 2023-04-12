@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -19,10 +27,11 @@ def variables_data(path_questionnaire_variables):
     resilience_id: The ID of the resilience question
     """
     resilience_ids = set()
-
+    # Loop over files
     for files in os.listdir(path_questionnaire_variables):
         if files.startswith('cov'):
             filenum = files.split('_')[2]
+            # Read file
             df = pd.read_csv(f'{path_questionnaire_variables}{files}', sep=',', encoding='utf-8')
             none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
             df[df.isin(none_value)] = np.nan
@@ -39,12 +48,13 @@ def results_data(path_questionnaire_results, resilience_id, resilience_path):
     resilience_df: Dataframe with the resilience anwers 
     """
     resilience_df = pd.DataFrame(columns=['project_pseudo_id'])
+    # Loop over files
     for files in os.listdir(path_questionnaire_results):
         if files.startswith('cov'):
             filenum = files.split('_')[2]
+            # Read file
             df = pd.read_csv(f'{path_questionnaire_results}{files}', sep=',', encoding='utf-8')
             none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
-           
             df[df.isin(none_value)] = np.nan
             resilience_col = [col for col in df.columns if resilience_id in col]
             if len(resilience_col) > 0:
@@ -59,6 +69,7 @@ def calculate_resilience(resilience_path, resilience_df):
     """
     Calculate the mean and median of the resilience questions
     """
+    # Read file
     resilience_df = pd.read_csv(f"{resilience_path}resilience_without_mean.tsv.gz", sep='\t', encoding='utf-8', compression='gzip')
     resilience_df = resilience_df.fillna(-11)
     resilience_df = resilience_df.set_index('project_pseudo_id')
@@ -83,7 +94,7 @@ def main():
     resilience_id = variables_data(path_questionnaire_variables)
     resilience_df = results_data(path_questionnaire_results, resilience_id, resilience_path)
     calculate_resilience(resilience_path, resilience_df)
-    print('DONE')
+    print('DONE: resilience.py')
 
 
 if __name__ == '__main__':

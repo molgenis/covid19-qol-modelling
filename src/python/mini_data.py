@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -31,12 +39,12 @@ def select_label_depressive(before_mini_df):
     before_mini_df = pd.merge(before_mini_df, major_depressive_episode[['project_pseudo_id', 'major_depressive_episode']], on=['project_pseudo_id'], how='outer')
     before_mini_df['major_depressive_episode'] = before_mini_df['major_depressive_episode'].fillna(0)
 
-    print('A. MAJOR DEPRESSIVE EPISODE')
-    print(dict(Counter(list(before_mini_df['major_depressive_episode']))))
-    print(len(before_mini_df))
-    print(len(df_1_2))
-    print(len(major_depressive_episode))
-    print()
+    # print('A. MAJOR DEPRESSIVE EPISODE')
+    # print(dict(Counter(list(before_mini_df['major_depressive_episode']))))
+    # print(len(before_mini_df))
+    # print(len(df_1_2))
+    # print(len(major_depressive_episode))
+    # print()
     return before_mini_df
 
 def select_label_anxiety(before_mini_df):
@@ -49,13 +57,13 @@ def select_label_anxiety(before_mini_df):
     before_mini_df = pd.merge(before_mini_df, generalized_anxiety_disorder[['project_pseudo_id', 'generalized_anxiety_disorder']], on=['project_pseudo_id'], how='outer')
     before_mini_df['generalized_anxiety_disorder'] = before_mini_df['generalized_anxiety_disorder'].fillna(0)
     
-    print('O. GENERALIZED ANXIETY DISORDER')
-    print(dict(Counter(list(before_mini_df['generalized_anxiety_disorder']))))
-    print(len(before_mini_df))
-    print(len(df_1))
-    print(len(df_2))
-    print(len(generalized_anxiety_disorder))
-    print()
+    # print('O. GENERALIZED ANXIETY DISORDER')
+    # print(dict(Counter(list(before_mini_df['generalized_anxiety_disorder']))))
+    # print(len(before_mini_df))
+    # print(len(df_1))
+    # print(len(df_2))
+    # print(len(generalized_anxiety_disorder))
+    # print()
     return before_mini_df
 
 
@@ -69,9 +77,9 @@ def main():
 
     mini_df = pd.DataFrame()
 
-    print('BEFORE')
+    # print('BEFORE')
     before_mini_df = mini_before_covid(my_folder, mini_path)
-    print('BETWEEN')
+    # print('BETWEEN')
     mini_df = make_mini_df_between(path_results, mini_path)
     mini_df, set_participants, df_dep, df_anx = mini_between_covid(mini_path, mini_df)
     
@@ -90,7 +98,7 @@ def main():
     merge_before_between['generalized_anxiety_disorder'] = merge_before_between['generalized_anxiety_disorder'].fillna(0)
     merge_before_between.to_csv(f"{mini_path}between_before_mini.tsv.gz", sep='\t',
                         encoding='utf-8', compression='gzip', index=False)    
-    print('DONE')
+    print('DONE: mini_data.py')
 
 
 if __name__ == '__main__':

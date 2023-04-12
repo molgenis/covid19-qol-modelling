@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # Imports
 import pandas as pd
 import numpy as np
 import sys
-
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
 from config import get_config
 import matplotlib.pyplot as plt
-
 plt.switch_backend('agg')
 import warnings
 import scipy.stats as stats
@@ -31,7 +37,7 @@ def calculate_cor(df_corr, create_model):
                 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Consumer_trust', 'Economic_climate', 'Buy_willingness', 'AnnualRateOfChange', 'AnnualRateOfChangeDerived', 'News Sentiment'
                 ]
     # Open en write file
-    myfile = open(f'{create_model}spearman.tsv', 'w')
+    myfile = open(f'{create_model}spearman_table2.tsv', 'w')
     # Write header
     myfile.writelines('variable\trho\tpval\n')
     # Loop over list of columns
