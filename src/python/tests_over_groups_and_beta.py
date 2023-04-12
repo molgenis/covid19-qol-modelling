@@ -25,6 +25,7 @@ def age(df_QOL, variable):
     column_group = 'mean_age'
     df_QOL_select = select_columns(df_QOL, variable, column_group)
     print(set(df_QOL_select[column_group]))
+    df_QOL_select = df_QOL_select[df_QOL_select[column_group].notna()]
     spearman_test(df_QOL_select, variable, column_group)
 
 
