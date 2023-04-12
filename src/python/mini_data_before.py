@@ -134,7 +134,7 @@ def mini_before_covid(data_QOL_path, mini_path):
         # Columns with results of anxiety
         anxiety = list()
         # Read dataframe
-        df = pd.read_csv(f"{data_QOL_path}QOL_old/df/{num_quest}_mini.tsv.gz", sep='\t', encoding='utf-8',
+        df = pd.read_csv(f"{data_QOL_path}{num_quest}_mini.tsv.gz", sep='\t', encoding='utf-8',
                          compression='gzip')
         # Create nan values from the following values in the list 
         none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
