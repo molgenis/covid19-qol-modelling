@@ -15,13 +15,7 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 import scipy.stats as stats
-from statsmodels.stats.weightstats import ttest_ind
-from pandas.api.types import CategoricalDtype
-from statsmodels.miscmodels.ordinal_model import OrderedModel
-from statistics import median, mean, stdev
-from collections import Counter
-
-from make_tests_data import get_data_ready, merge_other_data
+from statistics import median, mean
 
 
 def calculate_U(group_a, group_b, name_a, name_b):

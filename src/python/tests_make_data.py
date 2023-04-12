@@ -11,15 +11,8 @@ sys.path.append(
 from config import get_config
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
-import scipy.stats as stats
-from statsmodels.stats.weightstats import ttest_ind
-from pandas.api.types import CategoricalDtype
-from statsmodels.miscmodels.ordinal_model import OrderedModel
-from statistics import median, mean, stdev
-from collections import Counter
 
 def get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_beta_path, create_file_with_groups_path, question_15_or_more_path, BFI_path):
     """

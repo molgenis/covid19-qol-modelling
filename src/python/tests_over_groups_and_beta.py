@@ -11,15 +11,8 @@ sys.path.append(
 from config import get_config
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
-import scipy.stats as stats
-from statsmodels.stats.weightstats import ttest_ind
-from pandas.api.types import CategoricalDtype
-from statsmodels.miscmodels.ordinal_model import OrderedModel
-from statistics import median, mean, stdev
-from collections import Counter
 
 from tests_make_data import get_data_ready, merge_other_data
 from test_spearman_wilcoxonU import calculate_U, calculate_group, select_columns, spearman_test, wilcoxon_U_test
