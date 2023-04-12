@@ -90,21 +90,23 @@ def select_columns(df_QOL, variable, column_group):
     df_QOL_select.drop_duplicates(inplace=True)
     return df_QOL_select
 
-def spearman_test(df_QOL_select, variable, column_group):
+def spearman_test(df_QOL_select, variable, column_group, myfile):
     """
     
     """
     spearman_values = stats.spearmanr(df_QOL_select[column_group], df_QOL_select[variable])
+    myfile.writelines(f'spearman\t{spearman_values}\{spearman_values.pvalue}\t{spearman_values.correlation}\n')
     print(f'-----{column_group} - spearmanr')
     print(spearman_values)
     print(spearman_values.pvalue)
 
-def wilcoxon_U_test(first_group, second_group, column_group):
+def wilcoxon_U_test(first_group, second_group, column_group, myfile):
     """
     
     """
     # wilcoxon_values = stats.ranksums(first_group, second_group)
     wilcoxonU = stats.mannwhitneyu(first_group, second_group)
+    myfile.writelines(f'wilcoxonU\t{wilcoxonU}\{wilcoxonU.pvalue}\t{wilcoxonU.statistic}\n')
     print(f'-----{column_group} - mannwhitneyu')
     print(wilcoxonU)
     print(wilcoxonU.pvalue)
