@@ -158,6 +158,103 @@ filter_column <- function(values, filter) {
   return(values)
 }
 
+plot_data_column <- function(column_of_interest_raw, processing_guide, qol_table, full_table, dayzero, daymax, dayinterval) {
+  column_of_interest <- paste0(column_of_interest_raw, "_filtered_to_plot")
+  guide_row <- processing_guide %>% filter(column_name == column_of_interest_raw)
+  message(guide_row %>% pull(name))
+  
+  # Add the table with characteristics (some discretized) to the quality of life table
+  full_tbl <- qol_table %>%
+    select(project_pseudo_id, qualityoflife, responsedate, day) %>%
+    inner_join(characteristics_processed, by="project_pseudo_id") %>%
+    filter(!is.na(get(column_of_interest)), get(column_of_interest) != "")
+  
+  # Create a summarised table in which to calculate daily averages per group
+  summarised_tbl <- full_tbl %>% 
+    group_by(across(all_of(c("responsedate", column_of_interest)))) %>%
+    summarise(qualityoflife = mean(qualityoflife, na.rm = T), n_total = n()) %>%
+    filter(n_total > 50)
+  
+  # Calculate a GAM for the daily population average model
+  #modelled_average <- gamm4(qualityoflife ~ s(day, bs="cr"), random = ~ (1|project_pseudo_id), data = qol_tib_filtered)
+  modelled_average <- gam(qualityoflife ~ s(day), data = qol_table)
+  
+  # Predict this GAM
+  predicted_average <- predict_gam(modelled_average, c(0, dayinterval)) %>%
+    mutate(responsedate = dayzero + day) %>%
+    rename(c(qualityoflife="fit"))
+  
+  predicted_average %>% filter(day == min(day) | day == max(day))
+  
+  # Calculate GAMs per group
+  modelled <- full_tbl %>% nest_by(across(all_of(c(column_of_interest)))) %>%
+    mutate(mod = list(gam(qualityoflife ~ s(day), data = data))) %>%
+    select(-data) %>%
+    rename(gam = mod) %>%
+    mutate(eff = summary(gam)[["p.coeff"]]["day"] * dayinterval,
+           eff.se = summary(gam)[["se"]]["day"] * dayinterval)
+  
+  # Predict this GAM
+  predicted <- predict_gamms(modelled, "gam", c(0, dayinterval)) %>%
+    unnest(data) %>%
+    mutate(responsedate = dayzero + day) %>%
+    rename(c(qualityoflife="fit")) %>%
+    mutate(lab_col = as.character(get(column_of_interest)))
+  
+  #predicted %>% group_by(age_bins) %>% filter(day == min(day) | day == max(day))
+  
+  # Create table with which to label each model
+  label_df <- subset(bind_rows(predicted, predicted_average), responsedate == max(responsedate)) %>%
+    mutate(lab_col = case_when(is.na(lab_col) ~ "population average", TRUE ~ lab_col))
+  
+  # Create plot
+  
+  ## One layer with daily averages per group
+  ## Two times two layers(geom_ribbon + geom_line) for the GAM models + Standard error
+  ## One layer with that direct labels the GAM models.
+  ## Scale_x_date to accomodate for extra room for the direct labels.
+  ## Scale color viridis to add a na.value color that is used for the label of the average model
+  ## Set title
+  ## Remove the legend
+  
+  p <- ggplot(full_tbl,
+              aes(x=responsedate, y=qualityoflife, color=.data[[column_of_interest]])) +
+    geom_point(data = summarised_tbl, alpha=0.2, size=0.5, shape=16) +
+    geom_ribbon(data = predicted_average, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit), alpha=0.2, inherit.aes=F) +
+    geom_line(data = predicted_average, aes(x=responsedate, y=qualityoflife), inherit.aes=F, color="grey70")+
+    geom_ribbon(data = predicted, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit, group=.data[[column_of_interest]]), alpha=0.2, inherit.aes=F) +
+    geom_line(data = predicted, aes(x=responsedate, y=qualityoflife))+
+    geom_text_repel(
+      data = label_df,
+      aes(label = lab_col),
+      size = 6*1/ggplot2::.pt,
+      min.segment.length = 0,
+      hjust = 0,
+      vjust = 0.5,
+      direction = "y",
+      nudge_x = 24,
+      segment.alpha = .5,
+      segment.curvature = -0.1,
+      segment.ncp = 3,
+      segment.angle = 20
+    ) +
+    scale_x_date(
+      limits = as.Date(c(dayzero, daymax + 400)), 
+    ) +
+    scale_color_viridis(discrete=TRUE, na.value = "grey50") +
+    labs(title=guide_row %>% pull(name)) + ylab("Quality of life score (1-10)") + xlab("Date") +
+    theme(legend.position="none")
+  
+  return(p)
+  
+  # # Save plot in .png or .pdf
+  # ggsave(sprintf("out-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
+  #        width=90, height=60, units='mm')
+  # ggsave(sprintf("out-%s-%s.pdf", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
+  #        width=90, height=60, units='mm')
+  
+}
+
 # Main
 
 #' Execute main
@@ -187,13 +284,6 @@ main <- function(argv=NULL) {
     select(-any_of(processing_guide$column_name)) %>%
     mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
   
-  # 
-  # # Filtered with enough samples
-  # qol_tib_filtered <- qol_tib %>% group_by(project_pseudo_id) %>%
-  #   filter(n() > 15) %>%
-  #   ungroup() %>%
-  #   mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
-
   # Calculate the minimum, maximum dates, as well as the number of days that separate the two
   dayzero <- min(as.Date("2020-03-30"))
   daymax <- max(qol_table$responsedate)
@@ -251,7 +341,23 @@ main <- function(argv=NULL) {
                type_plot_guide[[cur_column()]]),
              .names = "{col}_to_plot"))
   
-  fisher_out <- characteristics_processed %>%
+  characteristics_filtered <- characteristics_processed %>%
+    filter(beta_type %in% c("bottom", "around_zero", "top"))
+  
+  null_vs_top <- characteristics_processed %>%
+    filter(beta_type %in% c("top", "around_zero")) %>%
+    summarise(
+      across(
+        all_of(paste0(processing_guide %>% filter(type_assoc %in% c("ordinal", "continuous", "discrete")) %>% pull(column_name), "_filtered_to_test")), 
+        ~ list(tidy(cor.test(
+          x=as.numeric(.x), 
+          y=as.numeric(beta_type_filtered_to_test), 
+          method="spearman"))), .names="{col}_spearman"),
+      across(
+        all_of(paste0(processing_guide %>% filter(type_assoc %in% c("binary", "categorical")) %>% pull(column_name), "_filtered_to_test")), 
+        ~ list(tidy(fisher.test(.x, beta_type))), .names="{col}_fisher")) 
+  
+  bottom_vs_null <- characteristics_processed %>%
     filter(beta_type %in% c("bottom", "around_zero")) %>%
     summarise(
       across(
@@ -262,104 +368,59 @@ main <- function(argv=NULL) {
           method="spearman"))), .names="{col}_spearman"),
       across(
         all_of(paste0(processing_guide %>% filter(type_assoc %in% c("binary", "categorical")) %>% pull(column_name), "_filtered_to_test")), 
-        ~ list(tidy(fisher.test(.x, beta_type))), .names="{col}_fisher")) %>%
-    unnest(fisher_test)
+        ~ list(tidy(fisher.test(.x, beta_type))), .names="{col}_fisher")) 
   
-  for (column_of_interest_raw in columns_of_interest) {
-    column_of_interest <- paste0(column_of_interest_raw, "_filtered_to_plot")
-    guide_row <- processing_guide %>% filter(column_name == column_of_interest_raw)
-    message(guide_row %>% pull(name))
-
-    # Add the table with characteristics (some discretized) to the quality of life table
-    full_tbl <- qol_table %>%
-      select(project_pseudo_id, qualityoflife, responsedate, day) %>%
-      inner_join(characteristics_processed, by="project_pseudo_id") %>%
-      filter(!is.na(get(column_of_interest)), get(column_of_interest) != "")
-    
-    # Create a summarised table in which to calculate daily averages per group
-    summarised_tbl <- full_tbl %>% 
-      group_by(across(all_of(c("responsedate", column_of_interest)))) %>%
-      summarise(qualityoflife = mean(qualityoflife, na.rm = T), n_total = n()) %>%
-      filter(n_total > 50)
-    
-    # Calculate a GAM for the daily population average model
-    #modelled_average <- gamm4(qualityoflife ~ s(day, bs="cr"), random = ~ (1|project_pseudo_id), data = qol_tib_filtered)
-    modelled_average <- gam(qualityoflife ~ s(day), data = qol_table)
-    
-    # Predict this GAM
-    predicted_average <- predict_gam(modelled_average, c(0, dayinterval)) %>%
-      mutate(responsedate = dayzero + day) %>%
-      rename(c(qualityoflife="fit"))
-    
-    predicted_average %>% filter(day == min(day) | day == max(day))
+  beta_bottom_vs_null <- bottom_vs_null %>%
+    pivot_longer(
+      cols= everything(),
+      names_to = c("column_name", "test"),
+      names_pattern = "(.*)_filtered_to_test_(.*)",
+      values_to = c("test_out")) %>% unnest()
   
-    # Calculate GAMs per group
-    modelled <- full_tbl %>% nest_by(across(all_of(c(column_of_interest)))) %>%
-      mutate(mod = list(gam(qualityoflife ~ s(day), data = data))) %>%
-      select(-data) %>%
-      rename(gam = mod) %>%
-      mutate(eff = summary(gam)[["p.coeff"]]["day"] * dayinterval,
-             eff.se = summary(gam)[["se"]]["day"] * dayinterval)
+  beta_null_vs_top <- null_vs_top %>%
+    pivot_longer(
+      cols= everything(),
+      names_to = c("column_name", "test"),
+      names_pattern = "(.*)_filtered_to_test_(.*)",
+      values_to = c("test_out")) %>% unnest()
   
-    # Predict this GAM
-    predicted <- predict_gamms(modelled, "gam", c(0, dayinterval)) %>%
-      unnest(data) %>%
-      mutate(responsedate = dayzero + day) %>%
-      rename(c(qualityoflife="fit")) %>%
-      mutate(lab_col = as.character(get(column_of_interest)))
-    
-    #predicted %>% group_by(age_bins) %>% filter(day == min(day) | day == max(day))
-    
-    # Create table with which to label each model
-    label_df <- subset(bind_rows(predicted, predicted_average), responsedate == max(responsedate)) %>%
-      mutate(lab_col = case_when(is.na(lab_col) ~ "population average", TRUE ~ lab_col))
+  write.table(beta_null_vs_top, "test_beta_type_null_vs_top.tsv", quote=F, row.names=F, sep="\t")
+  write.table(beta_bottom_vs_null, "test_beta_type_bottom_vs_null.tsv", quote=F, row.names=F, sep="\t")
   
-    # Create plot
-    
-    ## One layer with daily averages per group
-    ## Two times two layers(geom_ribbon + geom_line) for the GAM models + Standard error
-    ## One layer with that direct labels the GAM models.
-    ## Scale_x_date to accomodate for extra room for the direct labels.
-    ## Scale color viridis to add a na.value color that is used for the label of the average model
-    ## Set title
-    ## Remove the legend
-    
-    p <- ggplot(full_tbl,
-                aes(x=responsedate, y=qualityoflife, color=.data[[column_of_interest]])) +
-      geom_point(data = summarised_tbl, alpha=0.2, size=1, shape=16) +
-      geom_ribbon(data = predicted_average, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit), alpha=0.2, inherit.aes=F) +
-      geom_line(data = predicted_average, aes(x=responsedate, y=qualityoflife), inherit.aes=F, color="grey70")+
-      geom_ribbon(data = predicted, aes(x=responsedate, ymin=qualityoflife-se.fit, ymax=qualityoflife+se.fit, group=.data[[column_of_interest]]), alpha=0.2, inherit.aes=F) +
-      geom_line(data = predicted, aes(x=responsedate, y=qualityoflife))+
-      geom_text_repel(
-        data = label_df,
-        aes(label = lab_col),
-        min.segment.length = 0,
-        hjust = 0,
-        vjust = 0.5,
-        direction = "y",
-        nudge_x = 24,
-        segment.alpha = .5,
-        segment.curvature = -0.1,
-        segment.ncp = 3,
-        segment.angle = 20
-      ) +
-      scale_x_date(
-        limits = as.Date(c(dayzero, daymax + 400)), 
-      ) +
-      scale_color_viridis(discrete=TRUE, na.value = "grey50") +
-      labs(title=guide_row %>% pull(name)) + ylab("Quality of life score (1-10)") + xlab("Date") +
-      theme(legend.position="none")
-    
-    # Save plot in .png or .pdf
-    ggsave(sprintf("out-%s-%s.png", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-           width=180, height=120, units='mm')
-    ggsave(sprintf("out-%s-%s.pdf", column_of_interest, format(Sys.Date(), "%Y%m%d")), p,
-           width=180, height=120, units='mm')
-  }
+  my_plots <- lapply(
+    columns_of_interest, 
+    plot_data_column, 
+    processing_guide = processing_guide, 
+    qol_table = qol_table,
+    full_table = full_table,
+    dayzero = dayzero,
+    daymax = daymax,
+    dayinterval = dayinterval
+    )
   
-  #plot(y=df_merge$num_participants_filter,x=df_merge$date_send, xlab="date",ylab="Num participants",col="black", type = "h") 
-  #points(y=df_merge$num_participants_filter, xlab="date", pch=16,col="red", type = "p", size=2)
+  names(my_plots) <- columns_of_interest
+  
+  # main_fig_columns
+  # 
+  # for (column_of_interest in main_fig_columns) {
+  #   p <- plot_list[column_of_interest]
+  #   p + labs(title="") + facet_wrap(~column_of_interest)
+  # }
+  # 
+  
+  compiled_plot <- plot_grid(
+    my_plots[["gender"]], 
+    my_plots[["mean_age"]], 
+    my_plots[["household_status"]], 
+    my_plots[["general_health"]], 
+    my_plots[["e_sum"]],
+    my_plots[["income"]],
+    my_plots[["mediacategory_media"]],
+    my_plots[["mediacategory_social_media"]],
+    align = 'hv', ncol=2,
+    rel_heights = c(3, 3, 3, 3), rel_widths = c(3,3))
+  
+  plot_to_pdf(compiled_plot, sprintf("out-compiled-%s.pdf", format(Sys.Date(), "%Y%m%d")), width = 180/10/2.54, height = 180)
     
 }
 
