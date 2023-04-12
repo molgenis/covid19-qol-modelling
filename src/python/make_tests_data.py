@@ -56,8 +56,8 @@ def merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, m
     # Read files
     if df_QOL.empty:
         df_QOL = pd.read_csv(f'{tests_over_groups_and_beta_path}merge_no_mini_last.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip') 
-    veerkracht = pd.read_csv(f"{resilience_path}df/resilience.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
-    mini = pd.read_csv(f"{mini_path}df/between_before_mini.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
+    veerkracht = pd.read_csv(f"{resilience_path}resilience.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
+    mini = pd.read_csv(f"{mini_path}between_before_mini.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
     # Merge files
     df_QOL = pd.merge(df_QOL, veerkracht, on=['project_pseudo_id'], how='outer')
     df_QOL = pd.merge(df_QOL, mini, on=['project_pseudo_id'], how='outer')

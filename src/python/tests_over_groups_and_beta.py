@@ -21,40 +21,8 @@ from statsmodels.miscmodels.ordinal_model import OrderedModel
 from statistics import median, mean, stdev
 from collections import Counter
 
-def get_data_ready(path_read_QOL, path_save):
-    """
-    
-    """
-    # Read files
-    df_QOL = pd.read_csv(f'{path_read_QOL}merge_15ormore_household_media_generalhealth_income_education.tsv.gz',
-                             sep='\t', encoding='utf-8', compression='gzip')
-    df = pd.read_csv(f'{path_read_QOL}num_quest_1_filter.tsv.gz', sep='\t', encoding='utf-8',
-                                compression='gzip')
-    # Merge files
-    df_QOL = pd.merge(df_QOL, df, how='left', on=['project_pseudo_id', 'times_part'])
-    # Save file
-    df_QOL = pd.read_csv(f'{path_read_QOL}with_beta_without_respons.tsv.gz',
-                             sep='\t', encoding='utf-8', compression='gzip')
-    # Read file
-    df_BFI = pd.read_csv(f'/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/VL/BFI_only_with_sum.tsv.gz',
-                             sep='\t', encoding='utf-8', compression='gzip')
-    # Remove 'Unnamed: 0'
-    df_BFI = df_BFI.iloc[:, 1:]
-    sum_cols = [col for col in df_BFI.columns if 'sum' in col]
-    df_QOL = pd.merge(df_QOL, df_BFI[['project_pseudo_id'] + sum_cols], on=['project_pseudo_id'], how='left')
-    # Read file
-    covariance_df = pd.read_csv(f'{calculate_beta_path}QOL_covariance_correlation_beta.tsv.gz', sep='\t', encoding='utf-8',
-                                compression='gzip')
-    # Remove 'Unnamed: 0'
-    covariance_df = covariance_df.iloc[:, 1:]
-    # Fill NaN with 0. This is because when the numerator is 0 the covariance is also 0.
-    covariance_df['covariance_value'] = covariance_df['covariance_value'].fillna(0)    
-    df_QOL = pd.merge(df_QOL, covariance_df[['project_pseudo_id', 'beta']], on=['project_pseudo_id'], how='left')
-    # Save file
-    df_QOL.to_csv(f'{path_read_QOL}merge_no_mini_last.tsv.gz', sep='\t', encoding='utf-8',
-                        compression='gzip')
-    
-    return df_QOL 
+from make_tests_data import get_data_ready, merge_other_data
+
 
 def calculate_U(group_a, group_b, name_a, name_b):
     """
@@ -302,106 +270,30 @@ def resilience(df_QOL, variable):
     column_group = 'resilience_median'
     df_QOL_select = select_columns(df_QOL, variable, column_group)
     spearman_test(df_QOL_select, variable, column_group)
-    
-
-
-def beta(df, path_read_QOL):
-    """
-    
-    """
-    # beta
-    df = df[df['beta'].notna()]
-    df_sort = df.sort_values(by=['beta'])
-    beta_participant = df_sort[['project_pseudo_id', 'beta']].drop_duplicates()
-    n = 10
-    head_n = beta_participant.head(int(len(beta_participant)*(n/100)))
-    tail_n = beta_participant.tail(int(len(beta_participant)*(n/100)))
-
-    head_nn = beta_participant[beta_participant['project_pseudo_id'].isin(list(head_n['project_pseudo_id']))]
-    head_nn['beta_type'] = 'bottom'
-    tail_nn = beta_participant[beta_participant['project_pseudo_id'].isin(list(tail_n['project_pseudo_id']))]
-    tail_nn['beta_type'] = 'top'
-    head_tail = pd.merge(head_nn[['project_pseudo_id', 'beta', 'beta_type']], tail_nn[['project_pseudo_id', 'beta', 'beta_type']], how='outer', on=['project_pseudo_id', 'beta', 'beta_type'])
-    print(head_tail)
-
-    
-    beta_participant['beta_abs'] = beta_participant['beta'].abs()
-    df_sort_abs = beta_participant.sort_values(by=['beta_abs'])
-    print(df_sort_abs)
-    beta_participant_abs = df_sort_abs[['project_pseudo_id', 'beta_abs']].drop_duplicates()
-    head_n_abs = beta_participant_abs.head(int(len(beta_participant_abs)*(n/100)))
-    print(len(head_n_abs))
-    print(head_n_abs)
-    print('-----------')
-    print(beta_participant)
-    head_df_abs = beta_participant[beta_participant['project_pseudo_id'].isin(list(head_n_abs['project_pseudo_id']))]
-    head_df_abs['beta_type'] = 'around_zero'
-    print(head_n_abs)
-
-    # head_df_abs.to_csv(f'{path_read_QOL}head_{n}_beta_abs.tsv', sep='\t', encoding='utf-8',
-    #                     index=False)
-    head_tail_null_df = pd.merge(head_tail[['project_pseudo_id', 'beta', 'beta_type']], head_df_abs[['project_pseudo_id', 'beta', 'beta_type']], how='outer', on=['project_pseudo_id', 'beta', 'beta_type'])
-    head_tail_null_df.to_csv(f'{path_read_QOL}head_tail_null_{n}_beta_abs.tsv', sep='\t', encoding='utf-8',
-                        index=False)
-    print(head_tail_null_df)
-    print(f'========= {len(set(head_tail_null_df["project_pseudo_id"]))}')
-    print(set(head_tail_null_df['beta_type']))
-    print(list(head_tail_null_df.columns))
-    print(int(len(beta_participant)*(n/100)))
-
-
-    
+  
 
 
 def main():
-    print('start')
     config = get_config()
     tests_over_groups_and_beta_path = config['tests_over_groups_and_beta']
-    my_folder = config['my_folder']
+    question_15_or_more_path = config['question_15_or_more']
+    BFI_path = config['BFI']
+    create_file_with_groups_path = config['create_file_with_groups']
+    calculate_beta_path = config['calculate_beta']
+    resilience_path = config['resilience']
+    mini_path = config['MINI']
     path_read_QOL = config['path_read_QOL']
-    path_save = f'{path_read_QOL}with_just_mean/'
-    filter_num = 15
+    head_top_null_path = config['head_top_null']
+
+    df_QOL = pd.DataFrame()
+    
     variable = 'beta'
-    # df_QOL = get_data_ready(path_read_QOL, path_save, filter_num)
-    
-    df_QOL = pd.read_csv(f'{path_read_QOL}merge_no_mini_last.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip') #merge_no_mini_filter merge_no_mini_NOfilter merge_no_mini_last
-    veerkracht = pd.read_csv(f"{path_read_QOL}df/veerkracht.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
-    mini = pd.read_csv(f"{path_read_QOL}df/between_before_mini.tsv.gz" , sep='\t', encoding='utf-8', compression='gzip')
-    df_QOL = pd.merge(df_QOL, veerkracht, on=['project_pseudo_id'], how='outer')
-    df_QOL = pd.merge(df_QOL, mini, on=['project_pseudo_id'], how='outer')
-    df_QOL = df_QOL[df_QOL['age'].notna()]
-    df_QOL = df_QOL[df_QOL['gender'].notna()]
-    df_QOL['major_depressive_episode'] = df_QOL['major_depressive_episode'].fillna(0)
-    df_QOL['generalized_anxiety_disorder'] = df_QOL['generalized_anxiety_disorder'].fillna(0)
+    df_QOL = get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_beta_path, create_file_with_groups_path, question_15_or_more_path, BFI_path)
+    df_QOL_select = merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, mini_path, head_top_null_path)   
 
-    age_mean = df_QOL.groupby('project_pseudo_id')['age'].mean().reset_index()
-    age_mean = age_mean.rename(columns={age_mean.columns[1]: 'mean_age'})
-    print(age_mean)
-    df_QOL = pd.merge(df_QOL, age_mean, on=['project_pseudo_id'], how="left")
-    
-   
-    df_beta_type = pd.read_csv(f'{path_read_QOL}head_tail_null_10_beta_abs.tsv' , sep='\t', encoding='utf-8')
-    df_QOL = pd.merge(df_QOL, df_beta_type[['project_pseudo_id', 'beta_type']], how='left', on=['project_pseudo_id'])
-
-    df_QOL_select = df_QOL[['project_pseudo_id', 'responsedate', 'qualityoflife',
-                    'gender', 'age', 'mean_age', 'household_status', 'general_health',
-                    'income', 'mediacategory_media', 'mediacategory_health_authorities',
-                    'mediacategory_social_media', 'mediacategory_family_and_friends',
-                    'mediacategory_other', 'education', 'n_sum', 'e_sum', 'o_sum', 'a_sum',
-                    'c_sum', 'times_part', 'beta', 'resilience_mean', 'resilience_median',
-                    'major_depressive_episode', 'generalized_anxiety_disorder', 'num_quest',
-                    'beta_type']]
-    
-    df_QOL_select.to_csv(f'{path_read_QOL}QOL_selected_columns_withbetatypes.tsv.gz', sep='\t', encoding='utf-8',
-                        compression='gzip', index=False)
-    
-    df_QOL_select2 = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
-    df_QOL_select2.drop_duplicates(inplace=True)
-    df_QOL_select2.to_csv(f'{path_read_QOL}QOL_selected_columns_withbetatypes_noageresponsequalnumquest.tsv.gz', sep='\t', encoding='utf-8',
-                        compression='gzip', index=False)
-
-    # df_QOL_select = pd.read_csv(f'{path_read_QOL}QOL_selected_columns_withbetatypes.tsv.gz' , sep='\t', encoding='utf-8', compression='gzip') #merge_no_mini_filter merge_no_mini_NOfilter merge_no_mini_last    
-    
+     
+    # df_QOL_filter['beta_abs'] = df_QOL_filter['beta'].abs()
+    # variable = 'beta_abs'
     age(df_QOL_select, variable)
     df_QOL_select = df_QOL_select.drop(['responsedate', 'qualityoflife', 'age', 'num_quest'], axis=1)
     df_QOL_select.drop_duplicates(inplace=True)
@@ -411,28 +303,10 @@ def main():
     general_health(df_QOL_select, variable)
     education(df_QOL_select, variable)
     income(df_QOL_select, variable)
-    mini_dep(df_QOL, variable)
-    mini_anx(df_QOL, variable)
+    mini_dep(df_QOL_select, variable)
+    mini_anx(df_QOL_select, variable)
     BFI(df_QOL_select, variable)
     resilience(df_QOL_select, variable)
-
-
-    # variable = 'beta_abs'
-    # df_QOL_filter['beta_abs'] = df_QOL_filter['beta'].abs()
-    # print(df_QOL_filter)
-    # # # print(df_QOL_filter)
-    # age(df_QOL_filter, variable)
-    # # ## df_QOL_filter.drop('age', axis=1, inplace=True)
-    # # ## df_QOL_filter.drop_duplicates(inplace=True)
-    # gender(df_QOL_filter, variable)
-    # household(df_QOL_filter, variable)
-    # media(df_QOL_filter, variable)
-    # general_health(df_QOL_filter, variable)
-    # education(df_QOL_filter, variable)
-    # income(df_QOL_filter, variable)
-    # mini_ana(df_QOL_filter, variable)
-    # BFI(df_QOL_filter, variable)
-    # resilience(df_QOL_filter, variable)
     
     print('DONE')
 
