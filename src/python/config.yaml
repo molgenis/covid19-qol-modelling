@@ -1,0 +1,24 @@
+# questionnaire
+path_questionnaire : '/groups/umcg-lifelines/rsc01/releases/covid/v3/results/'
+path_questionnaire_enumerations : '/groups/umcg-lifelines/rsc01/releases/covid/v3/enumerations/'
+path_questionnaire_results : '/groups/umcg-lifelines/rsc01/releases/covid/v3/results/'
+path_questionnaire_variables : '/groups/umcg-lifelines/rsc01/releases/covid/v3/variables/'
+path_LL : '/groups/umcg-lifelines/rsc01/releases/pheno_lifelines/v2/'
+# My folder
+my_folder : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/'
+
+# QOL
+path_read_QOL : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/'
+make_df_id : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/make_df_id/'
+calculate_beta : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/calculate_beta/'
+create_model : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/create_model/'
+data_QOL : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/data_QOL/'
+BFI : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/BFI/'
+resilience: '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/resilience/'
+MINI : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/MINI/'
+question_15_or_more : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/question_15_or_more/'
+create_file_with_groups : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/create_file_with_groups/'
+head_top_null : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/head_top_null/'
+information_num_quest : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/information_num_quest/'
+tests_over_groups_and_beta : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/QOL_paper/tests_over_groups_and_beta/'
+
