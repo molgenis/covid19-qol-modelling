@@ -25,7 +25,7 @@ tests_over_groups_and_beta : '/groups/umcg-lifelines/tmp01/projects/ov20_0554/um
 # python3 make_df_id.py
 # python3 calculate_beta.py
 # python3 question_15_or_more.py
-# python3 create_model.py (make_dataframe_for_correlation.py and correlation_for_table2.py)
+# python3 create_model.py
 # python3 information_num_quest.py
 # python3 BFI.py
 # python3 resilience.py
