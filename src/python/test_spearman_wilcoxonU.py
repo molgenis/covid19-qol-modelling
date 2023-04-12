@@ -78,6 +78,7 @@ def select_columns(df_QOL, variable, column_group):
     df_QOL = df_QOL[df_QOL['gender'].notna()]
     df_QOL_select = df_QOL[['project_pseudo_id', column_group, variable]]
     df_QOL_select = df_QOL_select.dropna().reset_index(drop=True)
+    df_QOL_select.drop_duplicates(inplace=True)
     return df_QOL_select
 
 def spearman_test(df_QOL_select, variable, column_group):

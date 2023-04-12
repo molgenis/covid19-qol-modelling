@@ -111,18 +111,21 @@ def income(df_QOL, variable):
     
     """
     column_group = 'income'
-    df_QOL_select = select_columns(df_QOL, variable, column_group)
+    df_QOL = df_QOL[df_QOL[column_group].notna()]
+    print(set(df_QOL[column_group]))
+    # df_QOL_select = select_columns(df_QOL, variable, column_group)
     
-    dict_ans = {"<\u20AC500":1.0, "\u20AC501-\u20AC1000":2.0, "\u20AC1001-\u20AC1500":3.0, "\u20AC1501-\u20AC2000":4.0, 
-                "\u20AC2001-\u20AC2500":5.0, "\u20AC2501-\u20AC3000":6.0, "\u20AC3001-\u20AC3500":7.0, 
-                "\u20AC3501-\u20AC4000":8.0, "\u20AC4001-\u20AC4500":9.0, "\u20AC4501-\u20AC5000":10.0, 
-                "\u20AC5001-\u20AC7500":11.0, ">\u20AC7500":12.0, "I prefer not to say":13.0}
-    df_QOL_select[column_group] = df_QOL_select[column_group].map(dict_ans)
-    df_QOL_select[column_group].replace(13, np.NaN, inplace=True)
-    df_QOL_select = df_QOL_select.dropna().reset_index(drop=True)
-    print(set(df_QOL_select[column_group]))
+    # dict_ans = {"<\u20AC500":1.0, "\u20AC501-\u20AC1000":2.0, "\u20AC1001-\u20AC1500":3.0, "\u20AC1501-\u20AC2000":4.0, 
+    #             "\u20AC2001-\u20AC2500":5.0, "\u20AC2501-\u20AC3000":6.0, "\u20AC3001-\u20AC3500":7.0, 
+    #             "\u20AC3501-\u20AC4000":8.0, "\u20AC4001-\u20AC4500":9.0, "\u20AC4501-\u20AC5000":10.0, 
+    #             "\u20AC5001-\u20AC7500":11.0, ">\u20AC7500":12.0, "I prefer not to say":13.0}
+    # df_QOL_select[column_group] = df_QOL_select[column_group].map(dict_ans)
+    # df_QOL_select[column_group].replace(13, np.NaN, inplace=True)
+    # df_QOL_select = df_QOL_select.dropna().reset_index(drop=True)
+    # print(set(df_QOL_select[column_group]))
+    # print(df_QOL_select[['project_pseudo_id', column_group, variable]])
     
-    # spearman_test(df_QOL_select, variable, column_group)
+    # # spearman_test(df_QOL_select, variable, column_group)
     
 
 def mini_dep(df_QOL, variable):
