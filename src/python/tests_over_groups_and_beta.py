@@ -202,7 +202,6 @@ def main():
     calculate_beta_path = config['calculate_beta']
     resilience_path = config['resilience']
     mini_path = config['MINI']
-    path_read_QOL = config['path_read_QOL']
     head_top_null_path = config['head_top_null']
 
     df_QOL = pd.DataFrame()
@@ -210,7 +209,7 @@ def main():
 
     variable = 'beta'
 
-    df_QOL = get_data_ready(path_read_QOL, tests_over_groups_and_beta_path, calculate_beta_path,
+    df_QOL = get_data_ready(tests_over_groups_and_beta_path, calculate_beta_path,
                             create_file_with_groups_path, question_15_or_more_path, BFI_path)
     df_QOL_select = merge_other_data(df_QOL, tests_over_groups_and_beta_path, resilience_path, mini_path,
                                      head_top_null_path)
