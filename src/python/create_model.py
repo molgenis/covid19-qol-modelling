@@ -72,18 +72,18 @@ def linear_regression(X_train, X_test, y_train, y_test, myfile, values):
     # ---Linear Regression-----------------------------------------
     line_reg = LinearRegression()
     line_reg.fit(X_train, y_train)
-    # print('Intercept: ', line_reg.intercept_)
-    # print('Coefficients: ', line_reg.coef_)
+    print('Intercept: ', line_reg.intercept_)
+    print('Coefficients: ', line_reg.coef_)
     # Predicting the y_value of linear regression
     lin_reg_y_predicted = line_reg.predict(X_test)
 
     # calculating the rmse
     lin_reg_rmse = np.sqrt(mean_squared_error(y_test, lin_reg_y_predicted))
-    # print('lin_reg_rmse : ', lin_reg_rmse)
+    print('lin_reg_rmse : ', lin_reg_rmse)
 
     # Linear Regression Accuracy with test set
     lin_reg_acc = r2_score(y_test, lin_reg_y_predicted)
-    # print('Linear Regression R2: ', lin_reg_acc)
+    print('Linear Regression R2: ', lin_reg_acc)
 
     myfile.writelines(
         f'linear regression\t{values}\t{line_reg.intercept_}\t{line_reg.coef_}\t{lin_reg_rmse}\t{lin_reg_acc}\n')
@@ -148,13 +148,13 @@ def run_models(qol_df, total_df, rolling_avg_temp_col, daylight_hours_col, myfil
     Make different models
     """
     # Select columns for model
-    qol_mod = qol_df[['date', 'qualityoflife', rolling_avg_temp_col, 'new_deaths', 'stringency_index',
-                      daylight_hours_col, 'size_responsedate']] 
+    qol_mod = qol_df[['date', 'qualityoflife', rolling_avg_temp_col, 'daily_hospitalization', 'stringency_index',
+                      daylight_hours_col, 'size_responsedate']] # daily_hospitalization, new_deaths
     # Save file
     qol_mod.to_csv(f'{create_model}for_models.tsv.gz', sep='\t', encoding='utf-8',
                    compression='gzip')
 
-    value_list = [[rolling_avg_temp_col, 'new_deaths', 'stringency_index', daylight_hours_col]] 
+    value_list = [[rolling_avg_temp_col, 'daily_hospitalization', 'stringency_index', daylight_hours_col]] #daily_hospitalization, new_deaths
     for values in value_list:
         qol_mod = qol_df[['date', 'qualityoflife'] + values + ['size_responsedate']]
         qol_mod.drop_duplicates(inplace=True)
@@ -221,7 +221,7 @@ def main():
     myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
     myfile.close()
 
-    # # remove new_deaths out the model (line: 151 and 157)
+    # # remove new_deaths or daily_hospitalization out the model (line: 151 and 157)
     # corr_hosp_death(df_corr, create_model)
 
     print('DONE: create_model.py')
