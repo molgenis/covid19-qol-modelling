@@ -57,6 +57,11 @@ def predict_values(qol_mod, qol_df, reg_model, reg, X, X_total, type_model, crea
     qol_df.to_csv(f'{create_model}predicted_{type_model}.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
     merge_QOL.to_csv(f'{create_model}predicted_qual_{type_model}.tsv.gz', sep='\t', encoding='utf-8',
                      compression='gzip')
+    
+
+    qol_mod.to_csv(f'{create_model}average_points_{type_model}.tsv', sep='\t', encoding='utf-8')
+    qol_df.to_csv(f'{create_model}predicted_points_{type_model}.tsv', sep='\t', encoding='utf-8')
+    merge_QOL.to_csv(f'{create_model}predicted_qual_{type_model}.tsv', sep='\t', encoding='utf-8')
 
 
 def linear_regression(X_train, X_test, y_train, y_test, myfile, values):
@@ -143,13 +148,13 @@ def run_models(qol_df, total_df, rolling_avg_temp_col, daylight_hours_col, myfil
     Make different models
     """
     # Select columns for model
-    qol_mod = qol_df[['date', 'qualityoflife', rolling_avg_temp_col, 'new_deaths', 'stringency_index',
-                      daylight_hours_col, 'size_responsedate']]
+    qol_mod = qol_df[['date', 'qualityoflife', rolling_avg_temp_col, 'stringency_index',
+                      daylight_hours_col, 'size_responsedate']] #'new_deaths', 
     # Save file
     qol_mod.to_csv(f'{create_model}for_models.tsv.gz', sep='\t', encoding='utf-8',
                    compression='gzip')
 
-    value_list = [[rolling_avg_temp_col, 'new_deaths', 'stringency_index', daylight_hours_col]]
+    value_list = [[rolling_avg_temp_col, 'stringency_index', daylight_hours_col]] #'new_deaths', 
     for values in value_list:
         qol_mod = qol_df[['date', 'qualityoflife'] + values + ['size_responsedate']]
         qol_mod.drop_duplicates(inplace=True)
