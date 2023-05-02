@@ -30,7 +30,7 @@ from sklearn.ensemble import RandomForestRegressor
 warnings.filterwarnings('ignore')
 from make_dataframe_for_correlation import add_weather_QOL, add_hospitalization, add_stringency_index, sunrise_sunset, \
     add_other_cat
-from correlation_for_table2 import calculate_cor
+from correlation_for_table2 import calculate_cor, corr_hosp_death
 
 
 def predict_values(qol_mod, qol_df, reg_model, reg, X, X_total, type_model, create_model):
@@ -218,6 +218,8 @@ def main():
     # Call run_models
     myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
     myfile.close()
+
+    corr_hosp_death(df_corr, create_model)
 
     print('DONE: create_model.py')
 

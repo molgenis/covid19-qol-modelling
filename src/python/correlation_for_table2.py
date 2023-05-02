@@ -10,6 +10,7 @@
 
 # Imports
 import sys
+import pandas as pd
 
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
@@ -63,3 +64,10 @@ def calculate_cor(df_corr, create_model):
         # Write to file
         myfile.writelines(f"{col}\t{rho}\t{pval}\n")
     myfile.close()
+
+def corr_hosp_death(df_corr, create_model_path):
+    print('JAAA')
+    print(df_corr)
+    print(list(df_corr.columns))
+    df = pd.read_csv(f'{create_model_path}predicted_qual_linear_regression.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
+    # df_merge = pd.merge(df_corr, df[['date', 'qualityoflife']], how="outer", on=["date"])
