@@ -148,13 +148,13 @@ def run_models(qol_df, total_df, rolling_avg_temp_col, daylight_hours_col, myfil
     Make different models
     """
     # Select columns for model
-    qol_mod = qol_df[['date', 'qualityoflife', rolling_avg_temp_col, 'stringency_index',
-                      daylight_hours_col, 'size_responsedate']] #'new_deaths', 
+    qol_mod = qol_df[['date', 'qualityoflife', rolling_avg_temp_col, 'new_deaths', 'stringency_index',
+                      daylight_hours_col, 'size_responsedate']] 
     # Save file
     qol_mod.to_csv(f'{create_model}for_models.tsv.gz', sep='\t', encoding='utf-8',
                    compression='gzip')
 
-    value_list = [[rolling_avg_temp_col, 'stringency_index', daylight_hours_col]] #'new_deaths', 
+    value_list = [[rolling_avg_temp_col, 'new_deaths', 'stringency_index', daylight_hours_col]] 
     for values in value_list:
         qol_mod = qol_df[['date', 'qualityoflife'] + values + ['size_responsedate']]
         qol_mod.drop_duplicates(inplace=True)
@@ -221,7 +221,8 @@ def main():
     myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
     myfile.close()
 
-    corr_hosp_death(df_corr, create_model)
+    # # remove new_deaths out the model (line: 151 and 157)
+    # corr_hosp_death(df_corr, create_model)
 
     print('DONE: create_model.py')
 
