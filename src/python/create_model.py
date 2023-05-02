@@ -47,18 +47,12 @@ def predict_values(qol_mod, qol_df, reg_model, reg, X, X_total, type_model, crea
         qol_df['y_pred'] = reg_model.predict(reg.fit_transform(X_total))
 
     # Filter on date
-    print(len(qol_df))
     qol_df = qol_df[(qol_df['date'] >= min(qol_mod['date'])) & (qol_df['date'] <= max(qol_mod['date']))]
-    print(len(qol_df))
     # Merge files
     merge_QOL = pd.merge(qol_df, qol_mod[['date', 'qualityoflife']], how="outer", on=["date"])
     residuals_df = merge_QOL.copy()
-    print('-----')
-    print(len(residuals_df))
     residuals_df = residuals_df[residuals_df['qualityoflife'].notna()]
-    print(len(residuals_df))
-    residuals_df['residuals'] = residuals_df['y_pred'] - residuals_df['qualityoflife']
-    print(residuals_df)
+    residuals_df['residuals'] = residuals_df['qualityoflife'] - residuals_df['y_pred']
     # Save files
     qol_mod.to_csv(f'{create_model}average_points_{type_model}.tsv.gz', sep='\t', encoding='utf-8',
                    compression='gzip')
