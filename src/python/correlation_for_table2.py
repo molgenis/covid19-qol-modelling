@@ -66,8 +66,12 @@ def calculate_cor(df_corr, create_model):
     myfile.close()
 
 def corr_hosp_death(df_corr, create_model_path):
-    print('JAAA')
-    print(df_corr)
-    print(list(df_corr.columns))
     df = pd.read_csv(f'{create_model_path}predicted_qual_linear_regression.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
-    # df_merge = pd.merge(df_corr, df[['date', 'qualityoflife']], how="outer", on=["date"])
+    df_merge = pd.merge(df_corr[['date', 'new_deaths', 'daily_hospitalization']], df[['date', 'residuals']], how="outer", on=["date"])
+    print(len(df_merge))
+    df_merge.dropna(inplace=True)
+    print(len(df_merge))
+    for i in ['new_deaths', 'daily_hospitalization']:
+        # Calculate spearman correlation
+        rho, pval = stats.spearmanr(df_merge[i], df_merge['residuals'])
+        print(f'{i} - rho: {rho} - pval {pval}\n')
