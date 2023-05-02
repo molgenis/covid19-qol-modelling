@@ -204,27 +204,31 @@ def main():
                                                                 data_QOL_path)
     df_corr = add_other_cat(final_dataframe, data_QOL_path)
 
-    # Calculate correlation between QOL and different variables (Table ...)
-    calculate_cor(df_corr, create_model)
+    for i in total_df.columns:
+        if 'daily_hospitalization' in i:
+            print(i)
 
-    # Write files
-    total_df.to_csv(f'{create_model}4_values_per_date.tsv.gz',
-                    sep='\t', encoding='utf-8', compression='gzip')
+    # # Calculate correlation between QOL and different variables (Table ...)
+    # calculate_cor(df_corr, create_model)
 
-    final_dataframe.to_csv(f'{create_model}merge_final_dataframe_with_rollingavg.tsv.gz', sep='\t', encoding='utf-8',
-                           compression='gzip')
+    # # Write files
+    # total_df.to_csv(f'{create_model}4_values_per_date.tsv.gz',
+    #                 sep='\t', encoding='utf-8', compression='gzip')
 
-    # Make file with results
-    myfile = open(f'{create_model}Results_models.tsv', 'w')
-    myfile.writelines(f'model\tvalues\tIntercept\tCoefficient\tRMSE\tR2\n')
-    # Call run_models
-    myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
-    myfile.close()
+    # final_dataframe.to_csv(f'{create_model}merge_final_dataframe_with_rollingavg.tsv.gz', sep='\t', encoding='utf-8',
+    #                        compression='gzip')
 
-    # # remove new_deaths or daily_hospitalization out the model (line: 151 and 157)
-    # corr_hosp_death(df_corr, create_model)
+    # # Make file with results
+    # myfile = open(f'{create_model}Results_models.tsv', 'w')
+    # myfile.writelines(f'model\tvalues\tIntercept\tCoefficient\tRMSE\tR2\n')
+    # # Call run_models
+    # myfile = run_models(final_dataframe, total_df, '7_max_temp', '7day_daylight_hours', myfile, create_model)
+    # myfile.close()
 
-    print('DONE: create_model.py')
+    # # # remove new_deaths or daily_hospitalization out the model (line: 151 and 157)
+    # # corr_hosp_death(df_corr, create_model)
+
+    # print('DONE: create_model.py')
 
 
 if __name__ == '__main__':
