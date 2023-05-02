@@ -72,18 +72,18 @@ def linear_regression(X_train, X_test, y_train, y_test, myfile, values):
     # ---Linear Regression-----------------------------------------
     line_reg = LinearRegression()
     line_reg.fit(X_train, y_train)
-    print('Intercept: ', line_reg.intercept_)
-    print('Coefficients: ', line_reg.coef_)
+    # print('Intercept: ', line_reg.intercept_)
+    # print('Coefficients: ', line_reg.coef_)
     # Predicting the y_value of linear regression
     lin_reg_y_predicted = line_reg.predict(X_test)
 
     # calculating the rmse
     lin_reg_rmse = np.sqrt(mean_squared_error(y_test, lin_reg_y_predicted))
-    print('lin_reg_rmse : ', lin_reg_rmse)
+    # print('lin_reg_rmse : ', lin_reg_rmse)
 
     # Linear Regression Accuracy with test set
     lin_reg_acc = r2_score(y_test, lin_reg_y_predicted)
-    print('Linear Regression R2: ', lin_reg_acc)
+    # print('Linear Regression R2: ', lin_reg_acc)
 
     myfile.writelines(
         f'linear regression\t{values}\t{line_reg.intercept_}\t{line_reg.coef_}\t{lin_reg_rmse}\t{lin_reg_acc}\n')
