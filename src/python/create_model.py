@@ -45,6 +45,10 @@ def predict_values(qol_mod, qol_df, reg_model, reg, X, X_total, type_model, crea
     else:
         qol_mod['y_pred'] = reg_model.predict(reg.fit_transform(X))
         qol_df['y_pred'] = reg_model.predict(reg.fit_transform(X_total))
+
+    print(len(qol_mod))
+    print(len(qol_df))
+
     # Filter on date
     qol_df = qol_df[qol_df['date'] >= min(qol_mod['date'])]
     # Merge files
@@ -54,14 +58,8 @@ def predict_values(qol_mod, qol_df, reg_model, reg, X, X_total, type_model, crea
                    compression='gzip')
     qol_df.to_csv(f'{create_model}predicted_points_{type_model}.tsv.gz', sep='\t', encoding='utf-8',
                   compression='gzip')
-    qol_df.to_csv(f'{create_model}predicted_{type_model}.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
     merge_QOL.to_csv(f'{create_model}predicted_qual_{type_model}.tsv.gz', sep='\t', encoding='utf-8',
                      compression='gzip')
-    
-
-    qol_mod.to_csv(f'{create_model}average_points_{type_model}.tsv', sep='\t', encoding='utf-8')
-    qol_df.to_csv(f'{create_model}predicted_points_{type_model}.tsv', sep='\t', encoding='utf-8')
-    merge_QOL.to_csv(f'{create_model}predicted_qual_{type_model}.tsv', sep='\t', encoding='utf-8')
 
 
 def linear_regression(X_train, X_test, y_train, y_test, myfile, values):
