@@ -66,7 +66,7 @@ def calculate_cor(df_corr, create_model):
     myfile.close()
 
 def corr_hosp_death(df_corr, create_model_path):
-    df = pd.read_csv(f'{create_model_path}predicted_qual_linear_regression.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
+    df = pd.read_csv(f'{create_model_path}residuals_predicted_qual_linear_regression.tsv.gz', sep='\t', encoding='utf-8', compression='gzip')
     df_merge = pd.merge(df_corr[['date', 'qualityoflife', 'new_deaths', 'daily_hospitalization']], df[['date', 'residuals']], how="outer", on=["date"])
 
     for j in ['residuals', 'qualityoflife']:

@@ -60,6 +60,8 @@ def predict_values(qol_mod, qol_df, reg_model, reg, X, X_total, type_model, crea
                   compression='gzip')
     merge_QOL.to_csv(f'{create_model}predicted_qual_{type_model}.tsv.gz', sep='\t', encoding='utf-8',
                      compression='gzip')
+    residuals_df.to_csv(f'{create_model}residuals_predicted_qual_{type_model}.tsv.gz', sep='\t', encoding='utf-8',
+                     compression='gzip')
 
 
 def linear_regression(X_train, X_test, y_train, y_test, myfile, values):
