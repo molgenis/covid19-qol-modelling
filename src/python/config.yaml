@@ -1,3 +1,11 @@
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 # questionnaire
 path_questionnaire : '/groups/umcg-lifelines/rsc01/releases/covid/v3/results/'
 path_questionnaire_enumerations : '/groups/umcg-lifelines/rsc01/releases/covid/v3/enumerations/'

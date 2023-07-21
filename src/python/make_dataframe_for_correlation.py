@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
+
 # Imports
 import pandas as pd
 import numpy as np
@@ -12,8 +21,8 @@ import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
 import warnings
-warnings.filterwarnings('ignore')
 
+warnings.filterwarnings('ignore')
 
 
 def add_weather_QOL(data_QOL_path, question_15_or_more_path):
@@ -35,12 +44,12 @@ def add_weather_QOL(data_QOL_path, question_15_or_more_path):
     avg = (knmi_data['Minimum Temperature (\u00B0C)'] + knmi_data['Maximum Temperature (\u00B0C)']) / 2
     knmi_data.insert(3, "avg_temp", avg)
     # adding .. day rolling mean weather avg
-    for days in range(1,22):
+    for days in range(1, 22):
         knmi_data[f'{days}day_rolling_avg_temp'] = knmi_data.rolling(days, min_periods=1)['avg_temp'].mean()
         knmi_data[f'{days}_max_temp'] = knmi_data.rolling(days, min_periods=1)['Maximum Temperature (\u00B0C)'].mean()
     # read_file 
     df = pd.read_csv(f'{question_15_or_more_path}num_quest_1_filter.tsv.gz', sep='\t',
-                     encoding='utf-8', compression='gzip') # num_quest_1_filter, QOL_data_VL29
+                     encoding='utf-8', compression='gzip')  # num_quest_1_filter, QOL_data_VL29
     # Select columns
     df = df[['project_pseudo_id', 'responsedate', 'qualityoflife']]
     # Groupby responsedate
@@ -78,14 +87,17 @@ def add_hospitalization(final_dataframe, total_df, df_participants, data_QOL_pat
     df_participants:
     """
     # Read files
-    hospitalization_1 = pd.read_csv(f'{data_QOL_path}COVID-19_ziekenhuisopnames.csv',sep=';', encoding='utf-8')
-    hospitalization_2 = pd.read_csv(f'{data_QOL_path}COVID-19_ziekenhuisopnames_tm_03102021.csv',sep=';', encoding='utf-8')
+    hospitalization_1 = pd.read_csv(f'{data_QOL_path}COVID-19_ziekenhuisopnames.csv', sep=';', encoding='utf-8')
+    hospitalization_2 = pd.read_csv(f'{data_QOL_path}COVID-19_ziekenhuisopnames_tm_03102021.csv', sep=';',
+                                    encoding='utf-8')
     # Concat files
     hospitalization = pd.concat([hospitalization_1, hospitalization_2])
     hospitalization['Date_of_statistics'] = pd.to_datetime(hospitalization['Date_of_statistics'])
     hospitalization_grouped = hospitalization.groupby(['Date_of_statistics']).sum().reset_index()
     # Rename columns
-    hospitalization_grouped.rename(columns={'Date_of_statistics': 'date', 'Hospital_admission_notification': 'daily_hospitalization'}, inplace=True)
+    hospitalization_grouped.rename(
+        columns={'Date_of_statistics': 'date', 'Hospital_admission_notification': 'daily_hospitalization'},
+        inplace=True)
     hospitalization_grouped = hospitalization_grouped[['date', 'daily_hospitalization']]
     # Merge files
     final_dataframe = pd.merge(final_dataframe, hospitalization_grouped, how="left", on=["date"])
@@ -116,6 +128,7 @@ def add_stringency_index(final_dataframe, total_df, df_participants, data_QOL_pa
     total_df = pd.merge(total_df, stringency_index, how="outer", on=["date"])
     return final_dataframe, total_df, df_participants
 
+
 def sunrise_sunset(final_dataframe, total_df, df_participants, data_QOL_path):
     """ 
     Add sunrise - sunset data
@@ -139,26 +152,26 @@ def sunrise_sunset(final_dataframe, total_df, df_participants, data_QOL_path):
     daylight_hours['daylight_hours'] = (daylight_hours['sunset'] - daylight_hours['sunrise'])
 
     # .. day shift daylight hours
-    for i in range(1,20,1):
+    for i in range(1, 20, 1):
         daylight_hours[f'{i}day_daylight_hours'] = daylight_hours['daylight_hours'].shift(i)
         # daylight_hours[f'{i}day_daylight_hours'] = daylight_hours.rolling(i, min_periods=1)['daylight_hours'].mean()
-        
-    daylight_hours=daylight_hours.drop(['sunset','sunrise'],axis=1) 
+
+    daylight_hours = daylight_hours.drop(['sunset', 'sunrise'], axis=1)
     # Merge files
     df_participants = pd.merge(df_participants, daylight_hours, how="left", on=["date"])
     final_dataframe = pd.merge(final_dataframe, daylight_hours, how="left", on=["date"])
     total_df = pd.merge(total_df, daylight_hours, how="outer", on=["date"])
     return final_dataframe, total_df, df_participants
 
+
 def add_other_cat(final_dataframe, data_QOL_path):
     """
     Add financial data
     Return
     final_dataframe:
-    """    
+    """
     finacial_data_news_sentiment = pd.read_excel(
         f'{data_QOL_path}finacial_data.xlsx')
     final_dataframe = pd.merge(final_dataframe, finacial_data_news_sentiment, how='left', on=['date'])
-    
-    return final_dataframe
 
+    return final_dataframe

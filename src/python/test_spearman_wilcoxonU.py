@@ -1,18 +1,27 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python3
+# !/usr/bin/env python3
+
+# ---------------------------------------------------------
+# Author: Anne van Ewijk
+# University Medical Center Groningen / Department of Genetics
+#
+# Copyright (c) Anne van Ewijk, 2023
+#
+# ---------------------------------------------------------
+
 
 # Imports
 import pandas as pd
-import numpy as np
-import os
 import sys
+
 sys.path.append(
     '/groups/umcg-lifelines/tmp01/projects/ov20_0554/umcg-aewijk/covid19-qol-modelling/src/python')
 from config import get_config
 import matplotlib.pyplot as plt
+
 plt.switch_backend('agg')
-import seaborn as sns
 import warnings
+
 warnings.filterwarnings('ignore')
 import scipy.stats as stats
 from statistics import median, mean
@@ -20,14 +29,14 @@ from statistics import median, mean
 
 def calculate_U(group_a, group_b, name_a, name_b):
     """
-    
+
     Calculate U
-    
+
     """
-    #http://users.sussex.ac.uk/~grahamh/RM1web/MannWhitneyHandout%202011.pdf
+    # http://users.sussex.ac.uk/~grahamh/RM1web/MannWhitneyHandout%202011.pdf
     a_b = list(group_a) + list(group_b)
     a_b_values = list([0] * len(group_a)) + list([1] * len(group_b))
-    df = pd.DataFrame(data = {'beta': a_b, 'group': a_b_values})
+    df = pd.DataFrame(data={'beta': a_b, 'group': a_b_values})
     # Step 1
     df['average_rank'] = df['beta'].rank(method='average')
     # Step 2
@@ -60,9 +69,10 @@ def calculate_U(group_a, group_b, name_a, name_b):
     print(f'{name_b} - median:{median(list(group_b))}, U2:{U2}, mean:{mean(list(group_b))}, len: {len(group_b)}')
     print()
 
+
 def calculate_group(df_QOL_select, column_group):
     """
-    
+
     """
     female_df = df_QOL_select[df_QOL_select['gender'] == 'FEMALE']
     male_df = df_QOL_select[df_QOL_select['gender'] != 'FEMALE']
@@ -70,9 +80,10 @@ def calculate_group(df_QOL_select, column_group):
     print(f'female: {len(female_df)} - mean_age: {female_df["mean_age"].mean()}')
     print(f'male: {len(male_df)} - mean_age: {male_df["mean_age"].mean()}')
 
+
 def select_columns(df_QOL, variable, column_group):
     """
-    
+
     """
     df_QOL = df_QOL[df_QOL['mean_age'].notna()]
     df_QOL = df_QOL[df_QOL['gender'].notna()]
@@ -81,24 +92,28 @@ def select_columns(df_QOL, variable, column_group):
     df_QOL_select.drop_duplicates(inplace=True)
     return df_QOL_select
 
-def spearman_test(df_QOL_select, variable, column_group):
+
+def spearman_test(df_QOL_select, variable, column_group, myfile):
     """
-    
+
     """
     spearman_values = stats.spearmanr(df_QOL_select[column_group], df_QOL_select[variable])
-    print(f'-----{column_group} - spearmanr')
-    print(spearman_values)
-    print(spearman_values.pvalue)
+    myfile.writelines(f'spearman\t{spearman_values}\{spearman_values.pvalue}\t{spearman_values.correlation}\n')
+    # print(f'-----{column_group} - spearmanr')
+    # print(spearman_values)
+    # print(spearman_values.pvalue)
 
-def wilcoxon_U_test(first_group, second_group, column_group):
+
+def wilcoxon_U_test(first_group, second_group, column_group, myfile):
     """
-    
+
     """
     # wilcoxon_values = stats.ranksums(first_group, second_group)
     wilcoxonU = stats.mannwhitneyu(first_group, second_group)
-    print(f'-----{column_group} - mannwhitneyu')
-    print(wilcoxonU)
-    print(wilcoxonU.pvalue)
+    myfile.writelines(f'wilcoxonU\t{wilcoxonU}\{wilcoxonU.pvalue}\t{wilcoxonU.statistic}\n')
+    # print(f'-----{column_group} - mannwhitneyu')
+    # print(wilcoxonU)
+    # print(wilcoxonU.pvalue)
 
 
 
