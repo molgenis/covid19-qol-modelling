@@ -26,48 +26,6 @@ sys.path.append(
 from config import get_config
 
 
-def concat_questionnaires_filter(path_directory, directory):
-    """
-    Merge questionnaires.
-    Get only these columns: 'project_pseudo_id', 'responsedate', 'qualityoflife'
-    """
-    # Empty dataframe with three columns
-    all_quest = pd.DataFrame(columns=['project_pseudo_id', 'responsedate', 'qualityoflife'])
-    # Concat dataframes to one dataframe (all_quest)
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        # Only grab the files that start with 'covq_q_t' and end with '.csv'
-        if filename.startswith("covq") and filename.endswith(".csv"):
-            # Get the number of the questionnaire (this is still a string)
-            number_quest = filename.split('_')[2].replace('t', '')
-            # No quality of life question in questionnaire 01
-            if number_quest != '01':
-                # Read questionnaire number_quest
-                df = pd.read_csv(f'{path_directory}{filename}')
-                # Replace none_values with np.nan in df
-                none_value = ['"$4"', '"$5"', '"$6"', '"$7"', '$4', '$5', '$6', '$7']
-                df[df.isin(none_value)] = np.nan
-                # The strings that make up an id partly for quality of life question and date of filling in the
-                # questionnaire
-                string_QOL = '_qualityoflife'
-                string_respons = '_responsedate_adu_q'
-                # Change the IDs for the QoL question and the date the questionnaire was completed to 'qualityoflife'
-                # and 'responsedate'.
-                # This is so that they all have the same name.
-                df.columns = ['qualityoflife' if string_QOL in x else x for x in df.columns]
-                df.columns = ['responsedate' if string_respons in x else x for x in df.columns]
-                # Select only these columns out of the dataframe: 'project_pseudo_id', 'responsedate', 'qualityoflife'
-                df_select = df[['project_pseudo_id', 'responsedate', 'qualityoflife']]
-                # Concat the questionnaire dataframe to all_quest
-                all_quest = pd.concat([all_quest, df_select], ignore_index=True)  # , axis=1
-    # Drop NA values  
-    all_quest = all_quest.dropna()
-    # Change types
-    all_quest['responsedate'] = pd.to_datetime(all_quest['responsedate'])
-    all_quest = all_quest.astype({'qualityoflife': 'int64'})
-    return all_quest
-
-
 def calculate_mean_QOL(all_quest, path_save):
     """
     Calculate the mean per date. (=df_q)
@@ -89,11 +47,20 @@ def main():
     config = get_config()
     # Path to the folder containing the results of each questionnaire.
     path_directory = config['path_questionnaire_results']
+    question_15_or_more = config['question_15_or_more']
     path_save = config['make_df_id']
     directory = os.fsencode(path_directory)
     # Call different functions
-    all_quest = concat_questionnaires_filter(path_directory, directory)
-    df_id, df_q = calculate_mean_QOL(all_quest, path_save)
+    # all_quest = concat_questionnaires_filter(path_directory, directory)
+    df = pd.read_csv(f'{question_15_or_more_path}num_quest_1_filter.tsv.gz', sep='\t',
+                     encoding='utf-8', compression='gzip')  # num_quest_1_filter, QOL_data_VL29
+    # Select columns
+    df = df[['project_pseudo_id', 'responsedate', 'qualityoflife']]
+    # Groupby responsedate
+    df['size_responsedate'] = df.groupby(['responsedate'])[["responsedate"]].transform('size')
+    # df = df[(df['size_participants'] >= 15) & (df['size_responsedate'] >= 50)]
+    df = df[df['size_responsedate'] >= 50]
+    df_id, df_q = calculate_mean_QOL(df, path_save)
     print('DONE: make_df_id.py')
 
 

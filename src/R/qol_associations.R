@@ -32,6 +32,7 @@ library(mgcv)
 library(broom)
 library(lubridate)
 library(viridis)
+library(recipes)
 
 # Declare constants
 old <- theme_set(theme_classic())
@@ -54,6 +55,8 @@ parser$add_argument('--path-qol', metavar = 'path', type = 'character', required
                     help = 'Path to a file with data')
 parser$add_argument('--path-covar', metavar = 'path', type = 'character', required = TRUE,
                     help = 'Path to a file with data')
+parser$add_argument('--path-qol-pop', metavar = 'path', type = 'character', required = TRUE,
+                    help = 'Path to a file with population average QoLs')
 
 
 sample_n_groups = function(tbl, size, replace = FALSE, weight = NULL) {
@@ -158,6 +161,10 @@ filter_column <- function(values, filter) {
   return(values)
 }
 
+make_dummy_variable <- function(values) {
+  pivot_wider()
+}
+
 plot_data_column <- function(column_of_interest_raw, processing_guide, qol_table, full_table, dayzero, daymax, dayinterval) {
   column_of_interest <- paste0(column_of_interest_raw, "_filtered_to_plot")
   guide_row <- processing_guide %>% filter(column_name == column_of_interest_raw)
@@ -226,7 +233,7 @@ plot_data_column <- function(column_of_interest_raw, processing_guide, qol_table
     geom_line(data = predicted, aes(x=responsedate, y=qualityoflife))+
     geom_text_repel(
       data = label_df,
-      aes(label = lab_col),
+      aes(label = str_wrap(lab_col, width=20)),
       size = 6*1/ggplot2::.pt,
       min.segment.length = 0,
       hjust = 0,
@@ -279,10 +286,12 @@ main <- function(argv=NULL) {
   # Load both input tables, and also convert the general health column to an ordered factor
   covar_tib <- as_tibble(fread(args$path_covar, data.table=F))
   qol_tib <- as_tibble(fread(args$path_qol, data.table=F))
+  qol_pop_tib <- as_tibble(fread(args$path_qol_pop, data.table=F))
   
   qol_table <- qol_tib %>%
     select(-any_of(processing_guide$column_name)) %>%
-    mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days")))
+    mutate(day=as.numeric(difftime(responsedate, min(responsedate), units="days"))) %>%
+    distinct()
   
   # Calculate the minimum, maximum dates, as well as the number of days that separate the two
   dayzero <- min(as.Date("2020-03-30"))
@@ -421,7 +430,41 @@ main <- function(argv=NULL) {
     rel_heights = c(3, 3, 3, 3), rel_widths = c(3,3))
   
   plot_to_pdf(compiled_plot, sprintf("out-compiled-%s.pdf", format(Sys.Date(), "%Y%m%d")), width = 180/10/2.54, height = 180/10/2.54)
-    
+  
+  # TODO:
+  # Baseline associations between covariates and QoL
+  
+  characteristics_processed_with_dummy_variables <- characteristics_processed %>% 
+    recipe() %>% step_dummy(all_of(c("household_status_filtered_to_test")), one_hot=T) %>% 
+    prep() %>% bake(characteristics_processed)
+  
+  qol_summary <- inner_join(qol_table, qol_pop_tib, by = "responsedate", suffix=c("_individual", "_population")) %>% 
+    group_by(project_pseudo_id) %>% 
+    mutate(qualityoflife_difference = qualityoflife_individual - qualityoflife_population) %>%
+    summarise(average_qol_difference = mean(qualityoflife_difference, na.rm=T))
+  
+  qol_mod_out <- qol_summary %>% inner_join(characteristics_processed_with_dummy_variables, by = 'project_pseudo_id') %>%
+    summarise(
+    across(
+      all_of(paste0(processing_guide %>% filter(type_assoc %in% c("ordinal", "continuous", "discrete")) %>% pull(column_name), "_filtered_to_test")), 
+      ~ list(tidy(cor.test(
+        x=as.numeric(.x), 
+        y=as.numeric(average_qol_difference), 
+        method="spearman"))), .names="{col}_spearman"),
+    across(
+      all_of(paste0(processing_guide %>% filter(type_assoc %in% c("binary")) %>% pull(column_name), "_filtered_to_test")), 
+      ~ list(tidy(wilcox.test(as.numeric(average_qol_difference) ~ .x))), .names="{col}_wilcox"),
+    across(
+      starts_with(paste0(processing_guide %>% filter(type_assoc %in% c("categorical")) %>% pull(column_name), "_filtered_to_test")), 
+      ~ list(tidy(wilcox.test(as.numeric(average_qol_difference) ~ .x))), .names="{col}_wilcox"))
+  
+  qol_mod_results <- qol_mod_out %>%
+    pivot_longer(
+      cols=everything(),
+      names_to = c("column_name", "test"),
+      names_pattern = "(.*)_filtered_to_test_(.*)",
+      values_to = c("test_out")) %>% unnest(cols = c(test_out))
+  
 }
 
 if (sys.nframe() == 0 && !interactive()) {
