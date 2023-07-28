@@ -175,6 +175,9 @@ def run_models(qol_df, total_df, rolling_avg_temp_col, daylight_hours_col, myfil
 
         # Split arrays or matrices into random train and test subsets.
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Write absolute sizes
+        print(X_train.shape)
+        print(X_test.shape)
 
         line_reg, myfile = linear_regression(X_train, X_test, y_train, y_test, myfile, values)
         predict_values(qol_mod, total_filter, line_reg, '', X, X_total, f'linear_regression', create_model)
