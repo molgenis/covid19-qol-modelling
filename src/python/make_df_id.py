@@ -47,7 +47,7 @@ def main():
     config = get_config()
     # Path to the folder containing the results of each questionnaire.
     path_directory = config['path_questionnaire_results']
-    question_15_or_more = config['question_15_or_more']
+    question_15_or_more_path = config['question_15_or_more']
     path_save = config['make_df_id']
     directory = os.fsencode(path_directory)
     # Call different functions
